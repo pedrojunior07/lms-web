@@ -1,0 +1,233 @@
+/* About Page Specific Styles */
+.about-page {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", sans-serif;
+}
+
+/* Hero Section */
+.hero-section {
+  background: linear-gradient(135deg, #16a34a 0%, #65a30d 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-section::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: radial-gradient(circle at 25% 25%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 75% 75%, rgba(255, 255, 255, 0.05) 0%, transparent 50%);
+  background-size: 100px 100px;
+}
+
+.hero-section .container {
+  position: relative;
+  z-index: 2;
+}
+
+/* Mission Section */
+.mission-section {
+  background: #f8fafc;
+}
+
+.mission-section .card {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.mission-section .card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* CTA Section */
+.cta-section {
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.cta-section::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
+  background-size: 150px 150px;
+}
+
+.cta-section .container {
+  position: relative;
+  z-index: 2;
+}
+
+/* Partner Cards */
+.partner-card {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  border: 1px solid #e5e7eb;
+}
+
+.partner-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+}
+
+/* Certification Badges */
+.certification-badge {
+  transition: transform 0.3s ease;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.certification-badge:hover {
+  transform: scale(1.05);
+}
+
+/* Background Utilities */
+.bg-gradient-success {
+  background: linear-gradient(135deg, #16a34a 0%, #65a30d 100%);
+}
+
+.bg-gradient-primary {
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+}
+
+.bg-success-light {
+  background-color: rgba(22, 163, 74, 0.1);
+}
+
+.bg-primary-light {
+  background-color: rgba(59, 130, 246, 0.1);
+}
+
+.bg-warning-light {
+  background-color: rgba(245, 158, 11, 0.1);
+}
+
+.bg-info-light {
+  background-color: rgba(14, 165, 233, 0.1);
+}
+
+.bg-secondary-light {
+  background-color: rgba(107, 114, 128, 0.1);
+}
+
+.bg-danger-light {
+  background-color: rgba(239, 68, 68, 0.1);
+}
+
+/* Testimonials Enhancements */
+.testimonials-item {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  border: 1px solid #e5e7eb;
+}
+
+.testimonials-item:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+
+.testimonials-item .badge {
+  font-size: 0.75rem;
+}
+
+/* Line Clamp Utility */
+.line-clamb-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamb-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+  .hero-section .display-4 {
+    font-size: 2rem;
+  }
+
+  .hero-section .lead {
+    font-size: 1rem;
+  }
+
+  .mission-section .card-body {
+    padding: 1.5rem;
+  }
+
+  .cta-section .btn {
+    margin: 0.25rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .hero-section h1 {
+    font-size: 1.75rem;
+  }
+
+  .partner-card {
+    margin-bottom: 1rem;
+  }
+
+  .certification-badge {
+    margin-bottom: 1rem;
+  }
+}
+
+/* Animation Enhancements */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in-up {
+  animation: fadeInUp 0.6s ease-out;
+}
+
+/* Accessibility Improvements */
+@media (prefers-reduced-motion: reduce) {
+  .mission-section .card,
+  .partner-card,
+  .certification-badge,
+  .testimonials-item {
+    transition: none;
+  }
+
+  .fade-in-up {
+    animation: none;
+  }
+}
+
+/* Focus States */
+.btn:focus,
+.card:focus {
+  outline: 2px solid #16a34a;
+  outline-offset: 2px;
+}
+
+/* Print Styles */
+@media print {
+  .hero-section,
+  .cta-section {
+    background: white !important;
+    color: black !important;
+  }
+
+  .bg-gradient-success,
+  .bg-gradient-primary {
+    background: white !important;
+  }
+}
