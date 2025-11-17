@@ -9,7 +9,7 @@ const StudentSidebar = () => {
     <div className="col-lg-3 ">
         <div className="settings-sidebar theiaStickySidebar">
           <div>
-            <h6 className="mb-3">Main Menu</h6>
+            <h6 className="mb-3">Menu Principal</h6>
             <ul className="mb-3 pb-1">
           {studentSidebarData.map((menu:any ,index:any)=>(
             <li key={index}>

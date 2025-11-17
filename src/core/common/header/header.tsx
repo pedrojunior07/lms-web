@@ -8,6 +8,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { useCart } from "../context/cartContext";
 import { useAuth } from "../context/AuthContextType";
 import { Button, Modal } from "react-bootstrap";
+
 const Header = () => {
   const [scrolled, setScrolled] = useState(false);
   const [isMegaMenu, setIsMegaMenu] = useState(false);
@@ -27,18 +28,23 @@ const Header = () => {
     logout();
     setShowLogoutModal(false);
   };
+  
   const dataTheme = useSelector((state: any) => state.themeSetting.dataTheme);
+  
   const handleDataThemeChange = (theme: string) => {
     dispatch(setDataTheme(theme));
   };
+  
   const onHandleMobileMenu = () => {
     const root = document.getElementsByTagName("html")[0];
     root.classList.add("menu-opened");
   };
+  
   const onhandleCloseMenu = () => {
     const root = document.getElementsByTagName("html")[0];
     root.classList.remove("menu-opened");
   };
+  
   const { isAuthenticated, user, logout } = useAuth();
 
   const toggleSidebar = (title: any) => {
@@ -49,6 +55,7 @@ const Header = () => {
       setSubopen(title);
     }
   };
+  
   const toggleSubsidebar = (subitem: any) => {
     if (subitem === subsidebar) {
       setSubsidebar("");
@@ -56,6 +63,7 @@ const Header = () => {
       setSubsidebar(subitem);
     }
   };
+  
   const toggleSubsidebar2 = (subitem: any) => {
     if (subitem === subsidebar2) {
       setSubsidebar2("");
@@ -93,6 +101,7 @@ const Header = () => {
   useEffect(() => {
     setRole(user?.role || "");
   }, [user]);
+  
   useEffect(() => {
     const role = localStorage.getItem("role");
     setRole(role!);
@@ -111,14 +120,17 @@ const Header = () => {
       window.removeEventListener("scroll", handleScroll);
     };
   }, [role]);
+  
   useEffect(() => {
     document.documentElement.setAttribute("class", dataTheme);
   }, [dataTheme]);
+  
   useEffect(() => {
     const path = location.pathname;
     const pathArray = path.split("/").filter(Boolean);
     setBasePath(pathArray[0]);
   }, [location.pathname]);
+  
   const DarkButton = () => {
     return (
       <div
@@ -143,6 +155,7 @@ const Header = () => {
       </div>
     );
   };
+  
   return (
     <>
       {/* /Header Topbar*/}
@@ -248,7 +261,7 @@ const Header = () => {
                         </Link>
                       </li>
                     ) : mainMenus.tittle === "Páginas" ? (
-                      // Redirecionamento direto para Lista de Cursos
+                      // Redirecionamento direto para Sobre nós
                       <li
                         className={
                           location.pathname === all_routes.courseList
@@ -256,7 +269,7 @@ const Header = () => {
                             : ""
                         }
                       >
-                        <Link to={all_routes.about_us}>Sobre nos</Link>
+                        <Link to={all_routes.about_us}>Sobre nós</Link>
                       </li>
                     ) : mainMenus.separateRoute ? (
                       // Caso de megamenu
@@ -505,7 +518,7 @@ const Header = () => {
                   >
                     <ImageWithBasePath
                       src="assets/img/flags/us-flag.svg"
-                      alt="flag"
+                      alt="bandeira"
                     />
                   </Link>
                 </div>
@@ -538,7 +551,7 @@ const Header = () => {
                       onClick={() => setShowLogoutModal(true)}
                       className="btn btn-danger d-inline-flex align-items-center"
                     >
-                      Logout
+                      Sair
                     </button>
 
                     {/* Modal de Confirmação */}
@@ -572,13 +585,13 @@ const Header = () => {
                       to={all_routes.login}
                       className="btn btn-primary d-inline-flex align-items-center me-2"
                     >
-                      Sign In
+                      Entrar
                     </Link>
                     <Link
                       to={all_routes.register}
                       className="btn btn-secondary me-0"
                     >
-                      Register
+                      Registrar
                     </Link>
                   </>
                 )}
@@ -586,8 +599,6 @@ const Header = () => {
             ) : location.pathname === "/index-3" ? (
               <div className="header-btn d-flex align-items-center">
                 <DarkButton />
-
-                {/* Dropdown de Idioma (mostra sempre) */}
 
                 {/* Dropdown de Moeda (mostra sempre) */}
                 <div className="dropdown me-3">
@@ -640,7 +651,7 @@ const Header = () => {
                       onClick={() => setShowLogoutModal(true)}
                       className="btn btn-danger d-inline-flex align-items-center"
                     >
-                      Logout
+                      Sair
                     </button>
 
                     {/* Modal de Confirmação */}
@@ -674,13 +685,13 @@ const Header = () => {
                       to={all_routes.login}
                       className="btn btn-primary d-inline-flex align-items-center me-2"
                     >
-                      Sign In
+                      Entrar
                     </Link>
                     <Link
                       to={all_routes.register}
                       className="btn btn-secondary me-0"
                     >
-                      Register
+                      Registrar
                     </Link>
                   </>
                 )}
@@ -706,7 +717,7 @@ const Header = () => {
                       onClick={() => setShowLogoutModal(true)}
                       className="btn btn-danger d-inline-flex align-items-center"
                     >
-                      Logout
+                      Sair
                     </button>
 
                     {/* Modal de Confirmação */}
@@ -740,13 +751,13 @@ const Header = () => {
                       to={all_routes.login}
                       className="btn btn-primary d-inline-flex align-items-center me-2"
                     >
-                      Sign In
+                      Entrar
                     </Link>
                     <Link
                       to={all_routes.register}
                       className="btn btn-secondary me-0"
                     >
-                      Register
+                      Registrar
                     </Link>
                   </>
                 )}
@@ -762,7 +773,7 @@ const Header = () => {
                   >
                     <ImageWithBasePath
                       src="assets/img/flags/us-flag.svg"
-                      alt="flag"
+                      alt="bandeira"
                     />
                   </Link>
                   <ul className="dropdown-menu p-2 mt-2">
@@ -774,7 +785,7 @@ const Header = () => {
                         <ImageWithBasePath
                           src="assets/img/flags/us-flag.svg"
                           className="me-2"
-                          alt="flag"
+                          alt="bandeira"
                         />
                         ENG
                       </Link>
@@ -787,7 +798,7 @@ const Header = () => {
                         <ImageWithBasePath
                           src="assets/img/flags/arab-flag.svg"
                           className="me-2"
-                          alt="flag"
+                          alt="bandeira"
                         />
                         ARA
                       </Link>
@@ -800,7 +811,7 @@ const Header = () => {
                         <ImageWithBasePath
                           src="assets/img/flags/france-flag.svg"
                           className="me-2"
-                          alt="flag"
+                          alt="bandeira"
                         />
                         FRE
                       </Link>
@@ -836,7 +847,7 @@ const Header = () => {
                       onClick={() => setShowLogoutModal(true)}
                       className="btn btn-danger d-inline-flex align-items-center"
                     >
-                      Logout
+                      Sair
                     </button>
 
                     {/* Modal de Confirmação */}
@@ -870,13 +881,13 @@ const Header = () => {
                       to={all_routes.login}
                       className="btn btn-primary d-inline-flex align-items-center me-2"
                     >
-                      Sign In
+                      Entrar
                     </Link>
                     <Link
                       to={all_routes.register}
                       className="btn btn-secondary me-0"
                     >
-                      Register
+                      Registrar
                     </Link>
                   </>
                 )}
@@ -893,7 +904,7 @@ const Header = () => {
                     <ImageWithBasePath
                       className="rounded-pill"
                       src="assets/img/flags/us-flag.svg"
-                      alt="flag"
+                      alt="bandeira"
                     />
                   </Link>
                   <ul className="dropdown-menu p-2 mt-2">
@@ -905,7 +916,7 @@ const Header = () => {
                         <ImageWithBasePath
                           src="assets/img/flags/us-flag.svg"
                           className="me-2"
-                          alt="flag"
+                          alt="bandeira"
                         />
                         ENG
                       </Link>
@@ -918,7 +929,7 @@ const Header = () => {
                         <ImageWithBasePath
                           src="assets/img/flags/arab-flag.svg"
                           className="me-2"
-                          alt="flag"
+                          alt="bandeira"
                         />
                         ARA
                       </Link>
@@ -931,7 +942,7 @@ const Header = () => {
                         <ImageWithBasePath
                           src="assets/img/flags/france-flag.svg"
                           className="me-2"
-                          alt="flag"
+                          alt="bandeira"
                         />
                         FRE
                       </Link>
@@ -962,14 +973,14 @@ const Header = () => {
                     to={all_routes.login}
                     className="btn btn-primary d-inline-flex align-items-center me-2 px-3"
                   >
-                    Sign In
+                    Entrar
                   </Link>
                 </div>
                 <Link
                   to={all_routes.register}
                   className="btn btn-secondary me-0 px-3"
                 >
-                  Register
+                  Registrar
                 </Link>
               </div>
             ) : location.pathname.includes("instructor") ? (
@@ -1014,7 +1025,7 @@ const Header = () => {
                       </div>
                       <div>
                         <h6>Eugene Andre</h6>
-                        <p>instructerdemo@example.com</p>
+                        <p>instructordemo@example.com</p>
                       </div>
                     </div>
                     <ul className="profile-body">
@@ -1024,7 +1035,7 @@ const Header = () => {
                           to={all_routes.instructorProfile}
                         >
                           <i className="isax isax-security-user me-2" />
-                          My Profile
+                          Meu Perfil
                         </Link>
                       </li>
                       <li>
@@ -1033,7 +1044,7 @@ const Header = () => {
                           to={all_routes.instructorCourse}
                         >
                           <i className="isax isax-teacher me-2" />
-                          Courses
+                          Cursos
                         </Link>
                       </li>
                       <li>
@@ -1042,7 +1053,7 @@ const Header = () => {
                           to={all_routes.instructorEarning}
                         >
                           <i className="isax isax-dollar-circle me-2" />
-                          Earnings
+                          Ganhos
                         </Link>
                       </li>
                       <li>
@@ -1051,7 +1062,7 @@ const Header = () => {
                           to={all_routes.instructorPayout}
                         >
                           <i className="isax isax-coin me-2" />
-                          Payouts
+                          Pagamentos
                         </Link>
                       </li>
                       <li>
@@ -1060,7 +1071,7 @@ const Header = () => {
                           to={all_routes.instructorMessage}
                         >
                           <i className="isax isax-messages-3 me-2" />
-                          Messages<span className="message-count">2</span>
+                          Mensagens<span className="message-count">2</span>
                         </Link>
                       </li>
                       <li>
@@ -1069,7 +1080,7 @@ const Header = () => {
                           to={all_routes.instructorsettings}
                         >
                           <i className="isax isax-setting-2 me-2" />
-                          Settings
+                          Configurações
                         </Link>
                       </li>
                     </ul>
@@ -1079,14 +1090,14 @@ const Header = () => {
                         to={all_routes.login}
                       >
                         <i className="isax isax-arrow-2 me-2" />
-                        Log in as Student
+                        Entrar como Aluno
                       </Link>
                       <Link
                         to={all_routes.homeone}
                         className="btn btn-secondary d-inline-flex align-items-center justify-content-center w-100"
                       >
                         <i className="isax isax-logout me-2" />
-                        Logout
+                        Sair
                       </Link>
                     </div>
                   </div>
@@ -1132,8 +1143,8 @@ const Header = () => {
                         />
                       </div>
                       <div>
-                        <h6>Ronald Richard</h6>
-                        <p>studentdemo@example.com</p>
+                        <h6>Yanik Mussagy</h6>
+                        <p>ribeiroyannick405@gmail.com</p>
                       </div>
                     </div>
                     <ul className="profile-body">
@@ -1143,7 +1154,7 @@ const Header = () => {
                           to={all_routes.studentProfile}
                         >
                           <i className="isax isax-security-user me-2" />
-                          My Profile
+                          Meu Perfil
                         </Link>
                       </li>
                       <li>
@@ -1152,51 +1163,31 @@ const Header = () => {
                           to={all_routes.studentQuiz}
                         >
                           <i className="isax isax-award me-2" />
-                          Quiz Attempts
+                          Tentativas de Quiz
                         </Link>
                       </li>
                       <li>
-                        <Link
-                          className="dropdown-item d-inline-flex align-items-center rounded fw-medium2"
-                          to={all_routes.studentOrderHistory}
-                        >
-                          <i className="isax isax-shopping-cart me-2" />
-                          Order History
-                        </Link>
+                       
                       </li>
-                      <li>
-                        <Link
-                          className="dropdown-item d-inline-flex align-items-center rounded fw-medium"
-                          to={all_routes.studentMessage}
-                        >
-                          <i className="isax isax-messages-3 me-2" />
-                          Messages<span className="message-count">2</span>
-                        </Link>
-                      </li>
+                     
                       <li>
                         <Link
                           className="dropdown-item d-inline-flex align-items-center rounded fw-medium"
                           to={all_routes.studentSettings}
                         >
                           <i className="isax isax-setting-2 me-2" />
-                          Settings
+                          Configurações
                         </Link>
                       </li>
                     </ul>
                     <div className="profile-footer">
-                      <Link
-                        className="dropdown-item d-inline-flex align-items-center rounded fw-medium"
-                        to={all_routes.login}
-                      >
-                        <i className="isax isax-arrow-2 me-2" />
-                        Log in as Instructor
-                      </Link>
+                      
                       <Link
                         to={all_routes.homeone}
                         className="btn btn-secondary d-inline-flex align-items-center justify-content-center w-100"
                       >
                         <i className="isax isax-logout me-2" />
-                        Logout
+                        Sair
                       </Link>
                     </div>
                   </div>
@@ -1215,7 +1206,7 @@ const Header = () => {
                       >
                         <ImageWithBasePath
                           src="assets/img/flags/us-flag.svg"
-                          alt="flag"
+                          alt="bandeira"
                         />
                       </Link>
                       <ul className="dropdown-menu p-2 mt-2">
@@ -1227,7 +1218,7 @@ const Header = () => {
                             <ImageWithBasePath
                               src="assets/img/flags/us-flag.svg"
                               className="me-2"
-                              alt="flag"
+                              alt="bandeira"
                             />
                             ENG
                           </Link>
@@ -1240,7 +1231,7 @@ const Header = () => {
                             <ImageWithBasePath
                               src="assets/img/flags/arab-flag.svg"
                               className="me-2"
-                              alt="flag"
+                              alt="bandeira"
                             />
                             ARA
                           </Link>
@@ -1253,7 +1244,7 @@ const Header = () => {
                             <ImageWithBasePath
                               src="assets/img/flags/france-flag.svg"
                               className="me-2"
-                              alt="flag"
+                              alt="bandeira"
                             />
                             FRE
                           </Link>
@@ -1308,7 +1299,7 @@ const Header = () => {
                       onClick={() => setShowLogoutModal(true)}
                       className="btn btn-danger d-inline-flex align-items-center"
                     >
-                      Logout
+                      Sair
                     </button>
 
                     {/* Modal de Confirmação */}
@@ -1342,13 +1333,13 @@ const Header = () => {
                       to={all_routes.login}
                       className="btn btn-primary d-inline-flex align-items-center me-2"
                     >
-                      Sign In
+                      Entrar
                     </Link>
                     <Link
                       to={all_routes.register}
                       className="btn btn-secondary me-0"
                     >
-                      Register
+                      Registrar
                     </Link>
                   </>
                 )}

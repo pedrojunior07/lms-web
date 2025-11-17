@@ -3,7 +3,7 @@ import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { useCourseApi } from "../../../core/api/hooks/useCourseApi";
 import html2canvas from "html2canvas";
 
-// Tipos
+// Tipos (mantidos iguais)
 interface Lesson {
   id: number;
   title: string;
@@ -82,9 +82,10 @@ interface Certificate {
 }
 
 type TabKey = "overview" | "notes" | "documents" | "faq";
+type ContentType = "video" | "pdf" | "image" | "document" | "unknown";
 
 // Helpers
-const isDocumentUrl = (url: string | null | undefined) => {
+const isDocumentUrl = (url: string | null | undefined): boolean => {
   if (!url) return false;
   const u = url.toLowerCase();
   return (
@@ -105,35 +106,49 @@ const isDocumentUrl = (url: string | null | undefined) => {
   );
 };
 
-const isPdf = (url: string) => 
+const isPdf = (url: string): boolean => 
   url.toLowerCase().endsWith(".pdf") || url.includes("/api/upload/pdf");
 
-const isImage = (url: string) =>
+const isImage = (url: string): boolean =>
   [".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg"].some((ext) =>
     url.toLowerCase().endsWith(ext)
   ) || url.includes("/api/upload/thumbnail");
 
-const isVideoUrl = (url?: string | null) => {
+const isVideoUrl = (url?: string | null): boolean => {
   if (!url) return false;
   return /youtube\.com|youtu\.be|vimeo\.com|\.mp4($|\?)|\.webm($|\?)|\.m3u8($|\?)/i.test(url) ||
     url.includes("/api/upload/video");
 };
 
-const buildResourceUrl = (url: string) => {
+const getContentType = (url: string | null): ContentType => {
+  if (!url) return "unknown";
+  if (isVideoUrl(url)) return "video";
+  if (isPdf(url)) return "pdf";
+  if (isImage(url)) return "image";
+  if (isDocumentUrl(url)) return "document";
+  return "unknown";
+};
+
+const buildResourceUrl = (url: string): string => {
   if (!url) return url;
+  
   if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('blob:')) {
     return url;
   }
-  const baseUrl = process.env.NODE_ENV === 'development' 
-    ? 'http://localhost:3001' 
-    : 'http://192.250.224.214:3001';
+  
+  const isProduction = process.env.NODE_ENV === 'production';
+  const baseUrl = isProduction 
+    ? 'https://your-production-domain.com'
+    : 'http://localhost:3001';
+  
   if (url.startsWith('/api/')) {
     return `${baseUrl}${url}`;
   }
+  
   return `${baseUrl}/api/upload/${url}`;
 };
 
-const niceFileName = (url: string) => {
+const niceFileName = (url: string): string => {
   try {
     const u = new URL(url, window.location.origin);
     return decodeURIComponent(u.pathname.split("/").pop() || url);
@@ -143,7 +158,7 @@ const niceFileName = (url: string) => {
   }
 };
 
-const parseSeconds = (val?: string) => {
+const parseSeconds = (val?: string): number => {
   if (!val) return NaN;
   const n = Number(val);
   if (!Number.isNaN(n)) return n;
@@ -154,7 +169,7 @@ const parseSeconds = (val?: string) => {
   return mins * 60 + secs;
 };
 
-const formatDuration = (secondsLike?: any) => {
+const formatDuration = (secondsLike?: any): string => {
   const seconds = Number.isNaN(Number(secondsLike))
     ? parseSeconds(secondsLike)
     : Number(secondsLike);
@@ -164,7 +179,7 @@ const formatDuration = (secondsLike?: any) => {
   return `${mins}m ${secs.toString().padStart(2, "0")}s`;
 };
 
-const formatMinutesShort = (secondsLike?: string) => {
+const formatMinutesShort = (secondsLike?: string): string => {
   const secs = Number.isNaN(Number(secondsLike))
     ? parseSeconds(secondsLike)
     : Number(secondsLike);
@@ -173,7 +188,7 @@ const formatMinutesShort = (secondsLike?: string) => {
   return `${mins} min`;
 };
 
-const formatDate = (dateString: string) => {
+const formatDate = (dateString: string): string => {
   const date = new Date(dateString);
   return date.toLocaleDateString('pt-BR', {
     day: '2-digit',
@@ -374,7 +389,6 @@ const certificateStyles = `
     white-space: nowrap;
   }
 
-  /* Estilos para impressão */
   @media print {
     body * {
       visibility: hidden;
@@ -419,7 +433,6 @@ const certificateStyles = `
     }
   }
 
-  /* Responsividade */
   @media (max-width: 768px) {
     .certificate-container-printable {
       padding: 20px;
@@ -459,11 +472,386 @@ const StyleInjector = () => (
   <style dangerouslySetInnerHTML={{ __html: certificateStyles }} />
 );
 
+// Componente Player Universal
+const UniversalPlayer = ({ 
+  src, 
+  title,
+  contentType 
+}: { 
+  src: string | null; 
+  title?: string;
+  contentType?: ContentType;
+}) => {
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [pdfError, setPdfError] = useState(false);
+  const [iframeBlocked, setIframeBlocked] = useState(false);
+
+  const handleFullscreen = () => {
+    const element = document.getElementById('universal-player-content');
+    if (!element) return;
+
+    if (!isFullscreen) {
+      if (element.requestFullscreen) {
+        element.requestFullscreen();
+      }
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      }
+    }
+    setIsFullscreen(!isFullscreen);
+  };
+
+  const handleIframeError = () => {
+    console.warn('Iframe bloqueado por CSP, usando fallback');
+    setIframeBlocked(true);
+  };
+
+  const detectedType = contentType || (src ? getContentType(src) : 'unknown');
+
+  if (!src) {
+    return (
+      <div className="ratio ratio-16x9 bg-light rounded position-relative overflow-hidden">
+        <img
+          className="w-100 h-100"
+          src="/assets/img/course/course-27.jpg"
+          alt="Selecione uma aula para reproduzir"
+          style={{ objectFit: "cover" }}
+        />
+        <div className="position-absolute top-0 start-0 w-100 h-100 d-flex flex-column align-items-center justify-content-center bg-dark bg-opacity-25">
+          <div className="play-icon mb-2 text-white">
+            <i className="fas fa-play fs-1" />
+          </div>
+          <p className="text-white fs-5 mb-0">
+            Selecione uma aula para começar
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  const renderContent = () => {
+    switch (detectedType) {
+      case "video":
+        if (src.includes("/api/upload/video") || src.endsWith(".mp4") || src.endsWith(".webm")) {
+          return (
+            <video 
+              controls 
+              className="w-100 h-100" 
+              style={{ objectFit: "contain" }}
+            >
+              <source src={src} type="video/mp4" />
+              Seu navegador não suporta o elemento de vídeo.
+            </video>
+          );
+        } else {
+          return iframeBlocked ? (
+            <div className="flex-grow-1 d-flex align-items-center justify-content-center bg-light">
+              <div className="text-center p-4">
+                <i className="fas fa-video fs-1 text-warning mb-3"></i>
+                <h5>Conteúdo de Vídeo Externo</h5>
+                <p className="text-muted">Para assistir este vídeo, abra em uma nova aba.</p>
+                <a
+                  href={src}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn btn-primary"
+                >
+                  <i className="fas fa-external-link-alt me-2"></i>
+                  Assistir em Nova Aba
+                </a>
+              </div>
+            </div>
+          ) : (
+            <iframe
+              src={`${src}${src.includes("?") ? "&" : "?"}autoplay=1`}
+              title={title || "Aula em vídeo"}
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              className="w-100 h-100 border-0"
+              onError={handleIframeError}
+            />
+          );
+        }
+
+      case "pdf":
+        return (
+          <div className="w-100 h-100 d-flex flex-column">
+            <div className="d-flex justify-content-between align-items-center p-2 bg-dark text-white">
+              <span>
+                <i className="fas fa-file-pdf me-2"></i>
+                {title || "Documento PDF"}
+              </span>
+              <div>
+                <a 
+                  href={src} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="btn btn-sm btn-light me-2"
+                >
+                  <i className="fas fa-external-link-alt me-1"></i>
+                  Abrir em Nova Aba
+                </a>
+                <a 
+                  href={src} 
+                  className="btn btn-sm btn-light me-2"
+                  download
+                >
+                  <i className="fas fa-download me-1"></i>
+                  Baixar
+                </a>
+                <button 
+                  className="btn btn-sm btn-light"
+                  onClick={handleFullscreen}
+                >
+                  <i className="fas fa-expand me-1"></i>
+                  Tela Cheia
+                </button>
+              </div>
+            </div>
+            
+            {!pdfError ? (
+              <div className="flex-grow-1">
+                <object
+                  data={`${src}#view=FitH`}
+                  type="application/pdf"
+                  className="w-100 h-100"
+                  onError={() => setPdfError(true)}
+                >
+                  <div className="alert alert-warning h-100 d-flex align-items-center justify-content-center">
+                    <div className="text-center">
+                      <p>Não foi possível carregar o PDF inline.</p>
+                      <a
+                        href={src}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn btn-primary"
+                      >
+                        Abrir PDF em Nova Aba
+                      </a>
+                    </div>
+                  </div>
+                </object>
+              </div>
+            ) : (
+              <div className="flex-grow-1 d-flex align-items-center justify-content-center bg-light">
+                <div className="alert alert-warning m-3 text-center">
+                  <i className="fas fa-exclamation-triangle fs-1 mb-3"></i>
+                  <h5>Não foi possível carregar o PDF inline</h5>
+                  <p>Você pode abrir o documento em uma nova aba ou fazer o download.</p>
+                  <div className="mt-3">
+                    <a
+                      href={src}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="btn btn-primary me-2"
+                    >
+                      <i className="fas fa-external-link-alt me-2"></i>
+                      Abrir em Nova Aba
+                    </a>
+                    <a
+                      href={src}
+                      download
+                      className="btn btn-success"
+                    >
+                      <i className="fas fa-download me-2"></i>
+                      Baixar PDF
+                    </a>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+
+      case "image":
+        return (
+          <div className="w-100 h-100 d-flex flex-column">
+            <div className="d-flex justify-content-between align-items-center p-2 bg-dark text-white">
+              <span>
+                <i className="fas fa-image me-2"></i>
+                {title || "Imagem"}
+              </span>
+              <div>
+                <a 
+                  href={src} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="btn btn-sm btn-light me-2"
+                >
+                  <i className="fas fa-external-link-alt me-1"></i>
+                  Abrir em Nova Aba
+                </a>
+                <a 
+                  href={src} 
+                  className="btn btn-sm btn-light me-2"
+                  download
+                >
+                  <i className="fas fa-download me-1"></i>
+                  Baixar
+                </a>
+                <button 
+                  className="btn btn-sm btn-light"
+                  onClick={handleFullscreen}
+                >
+                  <i className="fas fa-expand me-1"></i>
+                  Tela Cheia
+                </button>
+              </div>
+            </div>
+            <div className="flex-grow-1 d-flex align-items-center justify-content-center bg-dark">
+              <img
+                src={src}
+                alt={title || "Imagem da aula"}
+                className="img-fluid"
+                style={{ maxHeight: "100%", maxWidth: "100%", objectFit: "contain" }}
+                onError={(e) => {
+                  console.error('Erro ao carregar imagem:', src);
+                  e.currentTarget.style.display = 'none';
+                }}
+              />
+            </div>
+          </div>
+        );
+
+      case "document":
+        return (
+          <div className="w-100 h-100 d-flex flex-column">
+            <div className="d-flex justify-content-between align-items-center p-2 bg-dark text-white">
+              <span>
+                <i className="fas fa-file me-2"></i>
+                {title || "Documento"}
+              </span>
+              <div>
+                <a 
+                  href={src} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="btn btn-sm btn-light me-2"
+                >
+                  <i className="fas fa-external-link-alt me-1"></i>
+                  Abrir em Nova Aba
+                </a>
+                <a 
+                  href={src} 
+                  className="btn btn-sm btn-light"
+                  download
+                >
+                  <i className="fas fa-download me-1"></i>
+                  Baixar
+                </a>
+              </div>
+            </div>
+            <div className="flex-grow-1 d-flex align-items-center justify-content-center bg-light">
+              <div className="text-center p-4">
+                <i className="fas fa-file fs-1 text-muted mb-3"></i>
+                <h5>Documento</h5>
+                <p className="text-muted">{niceFileName(src)}</p>
+                <div className="mt-3">
+                  <a
+                    href={src}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn btn-primary me-2"
+                  >
+                    <i className="fas fa-external-link-alt me-2"></i>
+                    Abrir em Nova Aba
+                  </a>
+                  <a
+                    href={src}
+                    download
+                    className="btn btn-success"
+                  >
+                    <i className="fas fa-download me-2"></i>
+                    Baixar Documento
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+
+      default:
+        return (
+          <div className="w-100 h-100 d-flex flex-column">
+            <div className="d-flex justify-content-between align-items-center p-2 bg-dark text-white">
+              <span>
+                <i className="fas fa-question-circle me-2"></i>
+                Conteúdo não reconhecido
+              </span>
+              <div>
+                <a 
+                  href={src} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="btn btn-sm btn-light me-2"
+                >
+                  <i className="fas fa-external-link-alt me-1"></i>
+                  Abrir em Nova Aba
+                </a>
+                <a 
+                  href={src} 
+                  className="btn btn-sm btn-light"
+                  download
+                >
+                  <i className="fas fa-download me-1"></i>
+                  Baixar
+                </a>
+              </div>
+            </div>
+            <div className="flex-grow-1 d-flex align-items-center justify-content-center bg-light">
+              <div className="text-center p-4">
+                <i className="fas fa-exclamation-triangle fs-1 text-warning mb-3"></i>
+                <h5>Tipo de conteúdo não suportado</h5>
+                <p className="text-muted">Não é possível visualizar este tipo de arquivo inline.</p>
+                <div className="mt-3">
+                  <a
+                    href={src}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn btn-primary me-2"
+                  >
+                    <i className="fas fa-external-link-alt me-2"></i>
+                    Abrir em Nova Aba
+                  </a>
+                  <a
+                    href={src}
+                    download
+                    className="btn btn-success"
+                  >
+                    <i className="fas fa-download me-2"></i>
+                    Baixar Arquivo
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+    }
+  };
+
+  return (
+    <div 
+      id="universal-player-content"
+      className={`ratio ratio-16x9 bg-black rounded overflow-hidden ${isFullscreen ? 'fullscreen-mode' : ''}`}
+    >
+      {renderContent()}
+    </div>
+  );
+};
+
+const getCertificateApiBaseUrl = () => {
+  const isProduction = process.env.NODE_ENV === 'production';
+  return isProduction 
+    ? 'https://your-production-domain.com/e-learning/api'
+    : 'http://192.250.224.214:8585/e-learning/api';
+};
+
 const CourseWatch = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const courseId = searchParams.get("id");
-  const studentId = 5; // ID fixo do estudante - você pode mudar isso depois
+  const studentId = 5;
 
   const [activeTab, setActiveTab] = useState<TabKey>("overview");
   const [expandedModule, setExpandedModule] = useState<number | null>(null);
@@ -471,8 +859,9 @@ const CourseWatch = () => {
   const [modules, setModules] = useState<Module[]>([]);
   const [totalLessons, setTotalLessons] = useState(0);
 
-  const [currentVideo, setCurrentVideo] = useState<string | null>(null);
+  const [currentContent, setCurrentContent] = useState<string | null>(null);
   const [currentLesson, setCurrentLesson] = useState<Lesson | null>(null);
+  const [currentContentType, setCurrentContentType] = useState<ContentType>("unknown");
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>("");
@@ -489,7 +878,9 @@ const CourseWatch = () => {
   const [loadingCertificate, setLoadingCertificate] = useState(false);
   const [existingCertificates, setExistingCertificates] = useState<Certificate[]>([]);
 
-  // Usar o hook da API
+  // Estados adicionais que estavam faltando
+  const [descricaoExpandida, setDescricaoExpandida] = useState(false);
+
   const { 
     getCourceById, 
     getCourseCards, 
@@ -512,11 +903,11 @@ const CourseWatch = () => {
     getDetailedProgressRef.current = getDetailedProgress;
   }, [getCourceById, getCourseCards, getCourseProgress, completeLesson, getDetailedProgress]);
 
-  // Função para carregar certificados existentes
   const loadExistingCertificates = async () => {
     try {
       console.log("🔍 Carregando certificados existentes...");
-      const response = await fetch('http://192.250.224.214:8585/e-learning/api/certificates/my', {
+      const apiBaseUrl = getCertificateApiBaseUrl();
+      const response = await fetch(`${apiBaseUrl}/certificates/my`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -539,7 +930,6 @@ const CourseWatch = () => {
     }
   };
 
-  // Função para verificar se já existe certificado para este curso
   const getCertificateForCurrentCourse = () => {
     if (!courseId || existingCertificates.length === 0) return null;
     
@@ -551,7 +941,8 @@ const CourseWatch = () => {
     return courseCert || null;
   };
 
-  // Função para imprimir certificado
+  const hasExistingCertificate = getCertificateForCurrentCourse();
+
   const printCertificate = () => {
     const certificateElement = document.getElementById('certificate-content');
     if (certificateElement) {
@@ -608,7 +999,6 @@ const CourseWatch = () => {
     }
   };
 
-  // Função para baixar certificado como PNG
   const downloadCertificate = async () => {
     try {
       const certificateElement = document.getElementById('certificate-content');
@@ -640,16 +1030,13 @@ const CourseWatch = () => {
     }
   };
 
-  // Função para gerar ou mostrar certificado
   const handleCertificateAction = async () => {
     if (!courseId) return;
     
     setLoadingCertificate(true);
     try {
-      // Primeiro carrega os certificados existentes
       await loadExistingCertificates();
       
-      // Verifica se já existe certificado para este curso
       const existingCert = getCertificateForCurrentCourse();
       
       if (existingCert) {
@@ -657,10 +1044,10 @@ const CourseWatch = () => {
         setCertificate(existingCert);
         setShowCertificateModal(true);
       } else {
-        // Tenta gerar um novo certificado
         console.log(`🎓 Tentando gerar novo certificado para curso ${courseId}`);
         
-        const response = await fetch(`http://192.250.224.214:8585/e-learning/api/certificates/issue/${courseId}`, {
+        const apiBaseUrl = getCertificateApiBaseUrl();
+        const response = await fetch(`${apiBaseUrl}/certificates/issue/${courseId}`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -674,13 +1061,11 @@ const CourseWatch = () => {
           setCertificate(newCertificate);
           setShowCertificateModal(true);
           
-          // Atualiza a lista de certificados
           await loadExistingCertificates();
         } else {
           const errorText = await response.text();
           console.error("❌ Erro ao gerar certificado:", response.status, errorText);
           
-          // Se não conseguir gerar, mostra mensagem informativa
           if (response.status === 400) {
             alert("Não foi possível gerar o certificado. Verifique se você completou todos os requisitos do curso.");
           } else {
@@ -691,7 +1076,6 @@ const CourseWatch = () => {
     } catch (error: any) {
       console.error("❌ Erro no processo de certificado:", error);
       
-      // Fallback: mostra certificado mock se houver um existente
       const existingCert = getCertificateForCurrentCourse();
       if (existingCert) {
         setCertificate(existingCert);
@@ -704,7 +1088,6 @@ const CourseWatch = () => {
     }
   };
 
-  // Função para carregar progresso detalhado do endpoint correto
   const loadDetailedProgress = async (courseId: number, studentId: number) => {
     try {
       console.log(`🔍 Carregando progresso detalhado: curso ${courseId}, estudante ${studentId}`);
@@ -717,7 +1100,6 @@ const CourseWatch = () => {
     }
   };
 
-  // Função para calcular progresso REAL baseado nos dados da API
   const calculateRealProgress = (modulesData: Module[]) => {
     let totalCompleted = 0;
     let totalLessonsCount = 0;
@@ -727,7 +1109,6 @@ const CourseWatch = () => {
       totalLessonsCount += moduleLessons.length;
       
       moduleLessons.forEach(lesson => {
-        // Verifica se a aula está concluída pelo progress da API
         if (lesson.progress && lesson.progress.completed === true) {
           totalCompleted++;
           console.log(`✅ Aula ${lesson.id} - ${lesson.title} está CONCLUÍDA`);
@@ -750,7 +1131,6 @@ const CourseWatch = () => {
     };
   };
 
-  // Função para ver progresso detalhado
   const handleViewProgress = async () => {
     if (!courseId) return;
     
@@ -762,167 +1142,21 @@ const CourseWatch = () => {
     }
   };
 
-  // Carregar dados do curso e progresso
-  useEffect(() => {
-    if (!courseId) {
-      setError("ID do curso não fornecido");
-      setLoading(false);
-      return;
-    }
-
-    let cancelled = false;
-
-    const fetchCourseData = async () => {
-      setLoading(true);
-      setError("");
-      try {
-        console.log("🔍 Carregando curso ID:", courseId);
-        console.log("👤 ID do Estudante:", studentId);
-
-        // 1. Buscar informações básicas do curso
-        const courseResponse = await getCourceByIdRef.current(Number(courseId));
-        if (cancelled) return;
-        
-        console.log("✅ Curso carregado:", courseResponse);
-        const courseData = courseResponse.data as Course;
-        setCourse(courseData);
-
-        // 2. Buscar progresso detalhado do endpoint ESPECÍFICO
-        const detailedProgress = await loadDetailedProgress(Number(courseId), studentId);
-        if (cancelled) return;
-
-        console.log("📊 Dados detalhados do progresso:", detailedProgress);
-        
-        // Processar os módulos com progresso
-        const fetchedModules = detailedProgress as Module[];
-        
-        const processedModules = fetchedModules.map(module => ({
-          ...module,
-          lessons: module.lessons.map(lesson => ({
-            ...lesson,
-            content: buildResourceUrl(lesson.content)
-          }))
-        }));
-        
-        setModules(processedModules);
-
-        // 3. CALCULAR PROGRESSO REAL baseado nos dados dos módulos
-        const realProgress = calculateRealProgress(processedModules);
-        console.log("🎯 Progresso real calculado:", realProgress);
-
-        // Atualizar estados com progresso real
-        setTotalLessons(realProgress.totalLessons);
-        setProgressPercentage(realProgress.progressPercentage);
-
-        // Criar Set de aulas concluídas baseado no progresso real
-        const completedLessonsSet = new Set<number>();
-        processedModules.forEach(module => {
-          module.lessons.forEach(lesson => {
-            if (lesson.progress && lesson.progress.completed === true) {
-              completedLessonsSet.add(lesson.id);
-            }
-          });
-        });
-        setCompletedLessons(completedLessonsSet);
-
-        console.log("📋 Aulas concluídas:", Array.from(completedLessonsSet));
-
-        // 4. Carregar certificados existentes
-        await loadExistingCertificates();
-
-        // 5. Buscar progresso adicional do backend (para lastAccessDate)
-        try {
-          console.log("🔍 Carregando progresso adicional do curso...");
-          const progressResponse = await getCourseProgressRef.current(Number(courseId));
-          if (!cancelled && progressResponse.data) {
-            console.log("✅ Progresso adicional carregado:", progressResponse.data);
-            const progress = progressResponse.data as Progress;
-            
-            // Atualizar última atividade se disponível
-            if (progress.lastAccessDate) {
-              const date = new Date(progress.lastAccessDate);
-              setLastActivity(`Última atividade em ${date.toLocaleDateString('pt-BR', { 
-                day: 'numeric', 
-                month: 'long', 
-                year: 'numeric' 
-              })}`);
-            }
-          }
-        } catch (progressError) {
-          console.warn("⚠️ Não foi possível carregar o progresso adicional:", progressError);
-        }
-
-        // 6. Processar documentos
-        const courseDocsRaw: any[] = (courseData as any)?.documents || (courseData as any)?.resources || [];
-        const courseDocs = (Array.isArray(courseDocsRaw) ? courseDocsRaw : [])
-          .map((d) => typeof d === "string" ? buildResourceUrl(d) : d?.url ? buildResourceUrl(String(d.url)) : null)
-          .filter((x: string | null): x is string => !!x && isDocumentUrl(x));
-
-        const lessonDocs = processedModules
-          .flatMap((m) => m.lessons || [])
-          .map((l) => l.content)
-          .filter((url) => isDocumentUrl(url));
-
-        const uniqueDocs = Array.from(new Set([...courseDocs, ...lessonDocs]));
-        setDocuments(uniqueDocs);
-        setSelectedDoc((prev) => prev ?? (uniqueDocs[0] || null));
-
-        // 7. Expandir primeiro módulo e selecionar primeira aula não concluída
-        if (processedModules.length > 0) {
-          setExpandedModule(processedModules[0].id);
-          
-          // Encontrar primeira aula não concluída ou última aula se todas estiverem concluídas
-          let firstUncompletedLesson: Lesson | null = null;
-          let firstLesson: Lesson | null = null;
-          
-          for (const module of processedModules) {
-            for (const lesson of module.lessons) {
-              if (!firstLesson) firstLesson = lesson;
-              if (!lesson.progress?.completed && !firstUncompletedLesson) {
-                firstUncompletedLesson = lesson;
-                break;
-              }
-            }
-            if (firstUncompletedLesson) break;
-          }
-          
-          const lessonToPlay = firstUncompletedLesson || firstLesson;
-          if (lessonToPlay) {
-            console.log("🎬 Selecionando aula:", lessonToPlay.title);
-            handleLessonPlay(lessonToPlay, processedModules[0].id);
-          }
-        }
-
-        console.log("✅ Todos os dados carregados com sucesso!");
-
-      } catch (err: any) {
-        if (cancelled) return;
-        console.error("❌ Erro ao carregar dados do curso:", err?.response?.data || err?.message || err);
-        setError(
-          err?.response?.data?.message || 
-          err?.message || 
-          "Não foi possível carregar os dados do curso. Verifique se o ID está correto."
-        );
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    };
-
-    fetchCourseData();
-    return () => {
-      cancelled = true;
-    };
-  }, [courseId]);
-
   const handleLessonPlay = async (lesson: Lesson, moduleId?: number) => {
-    const videoUrl = buildResourceUrl(lesson.content);
-    setCurrentVideo(videoUrl);
+    const contentUrl = buildResourceUrl(lesson.content);
+    const contentType = getContentType(contentUrl);
+    
+    setCurrentContent(contentUrl);
     setCurrentLesson(lesson);
+    setCurrentContentType(contentType);
     setActiveTab("overview");
     
     if (moduleId) setExpandedModule(moduleId);
+    
+    console.log(`🎬 Reproduzindo aula: ${lesson.title}`, { contentType, url: contentUrl });
   };
 
+  // Funções que estavam faltando
   const toggleCompleteCurrent = async () => {
     if (!currentLesson || !courseId) return;
     
@@ -931,7 +1165,6 @@ const CourseWatch = () => {
     
     console.log(`${newCompletedState ? '✅' : '⬜'} Marcando aula ${currentLesson.id} como ${newCompletedState ? 'concluída' : 'não concluída'}`);
 
-    // Atualizar estado local otimisticamente
     setCompletedLessons((prev) => {
       const next = new Set(prev);
       if (newCompletedState) {
@@ -942,18 +1175,15 @@ const CourseWatch = () => {
       return next;
     });
 
-    // Atualizar percentual baseado no progresso real
     const newCount = newCompletedState ? completedLessons.size + 1 : completedLessons.size - 1;
     const newPercentage = totalLessons > 0 ? Math.round((newCount / totalLessons) * 100) : 0;
     setProgressPercentage(newPercentage);
 
-    // Sincronizar com backend
     try {
       if (newCompletedState) {
         await completeLessonRef.current(Number(courseId), currentLesson.id);
         console.log("✅ Aula marcada como concluída no servidor");
         
-        // Atualizar última atividade
         const now = new Date();
         setLastActivity(`Última atividade em ${now.toLocaleDateString('pt-BR', { 
           day: 'numeric', 
@@ -961,7 +1191,6 @@ const CourseWatch = () => {
           year: 'numeric' 
         })}`);
         
-        // Recarregar os dados para garantir sincronização
         setTimeout(async () => {
           try {
             console.log("🔄 Recarregando progresso após marcar aula...");
@@ -994,7 +1223,6 @@ const CourseWatch = () => {
     } catch (error: any) {
       console.error("❌ Erro ao atualizar progresso no servidor:", error);
       
-      // Reverter estado local em caso de erro
       setCompletedLessons((prev) => {
         const next = new Set(prev);
         if (!newCompletedState) {
@@ -1005,7 +1233,6 @@ const CourseWatch = () => {
         return next;
       });
       
-      // Reverter percentual
       const revertCount = wasCompleted ? completedLessons.size : completedLessons.size - 1;
       const revertPercentage = totalLessons > 0 ? Math.round((revertCount / totalLessons) * 100) : 0;
       setProgressPercentage(revertPercentage);
@@ -1014,7 +1241,6 @@ const CourseWatch = () => {
     }
   };
 
-  const [descricaoExpandida, setDescricaoExpandida] = useState(false);
   const descricaoComprimento = useMemo(() => {
     const html = course?.longDescription;
     if (!html) return 0;
@@ -1025,6 +1251,7 @@ const CourseWatch = () => {
       return html.length;
     }
   }, [course?.longDescription]);
+  
   const podeExpandirDescricao = descricaoComprimento > 500;
 
   const flatLessons = useMemo(() => {
@@ -1084,52 +1311,6 @@ const CourseWatch = () => {
     setExpandedModule((prev) => (prev === moduleId ? null : moduleId));
   };
 
-  const VideoPlayer = ({ src, title }: { src: string | null; title?: string }) => {
-    if (!src) {
-      return (
-        <div className="ratio ratio-16x9 bg-light rounded position-relative overflow-hidden">
-          <img
-            className="w-100 h-100"
-            src={course?.thumbnailPath ?? "assets/img/course/course-27.jpg"}
-            alt="Selecione uma aula para reproduzir"
-            style={{ objectFit: "cover" }}
-          />
-          <div className="position-absolute top-0 start-0 w-100 h-100 d-flex flex-column align-items-center justify-content-center bg-dark bg-opacity-25">
-            <div className="play-icon mb-2 text-white">
-              <i className="fas fa-play fs-1" />
-            </div>
-            <p className="text-white fs-5 mb-0">
-              Selecione uma aula para começar a assistir
-            </p>
-          </div>
-        </div>
-      );
-    }
-
-    if (src.includes("/api/upload/video") || src.endsWith(".mp4") || src.endsWith(".webm")) {
-      return (
-        <div className="ratio ratio-16x9 bg-black rounded overflow-hidden">
-          <video controls className="w-100 h-100" style={{ objectFit: "contain" }}>
-            <source src={src} type="video/mp4" />
-            Seu navegador não suporta o elemento de vídeo.
-          </video>
-        </div>
-      );
-    }
-
-    return (
-      <div className="ratio ratio-16x9 bg-black rounded overflow-hidden">
-        <iframe
-          src={`${src}${src.includes("?") ? "&" : "?"}autoplay=1`}
-          title={title || "Aula em vídeo"}
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          allowFullScreen
-          className="w-100 h-100 border-0"
-        />
-      </div>
-    );
-  };
-
   // Componente Modal de Progresso
   const ProgressModal = () => {
     if (!showProgressModal) return null;
@@ -1187,7 +1368,6 @@ const CourseWatch = () => {
                 </div>
               </div>
 
-              {/* Detalhamento por módulo */}
               <div className="mt-4">
                 <h6>Progresso por Módulo:</h6>
                 {modules.map((module, index) => {
@@ -1240,7 +1420,6 @@ const CourseWatch = () => {
                 className="btn btn-primary"
                 onClick={() => {
                   setShowProgressModal(false);
-                  // Foca na primeira aula não concluída
                   const firstUncompleted = flatLessons.find(item => 
                     !completedLessons.has(item.lesson.id)
                   );
@@ -1284,7 +1463,6 @@ const CourseWatch = () => {
             <div className="modal-body p-0 d-flex align-items-center justify-content-center">
               <div className="certificate-wrapper" style={{ maxWidth: '1200px', width: '100%' }}>
                 <div id="certificate-content" className="certificate-container-printable">
-                  {/* Design profissional do certificado */}
                   <div className="certificate-border">
                     <div className="certificate-header">
                       <div className="certificate-logo">
@@ -1387,6 +1565,145 @@ const CourseWatch = () => {
     );
   };
 
+  useEffect(() => {
+    if (!courseId) {
+      setError("ID do curso não fornecido");
+      setLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+
+    const fetchCourseData = async () => {
+      setLoading(true);
+      setError("");
+      try {
+        console.log("🔍 Carregando curso ID:", courseId);
+        console.log("👤 ID do Estudante:", studentId);
+
+        const courseResponse = await getCourceByIdRef.current(Number(courseId));
+        if (cancelled) return;
+        
+        console.log("✅ Curso carregado:", courseResponse);
+        const courseData = courseResponse.data as Course;
+        setCourse(courseData);
+
+        const detailedProgress = await loadDetailedProgress(Number(courseId), studentId);
+        if (cancelled) return;
+
+        console.log("📊 Dados detalhados do progresso:", detailedProgress);
+        
+        const fetchedModules = detailedProgress as Module[];
+        
+        const processedModules = fetchedModules.map(module => ({
+          ...module,
+          lessons: module.lessons.map(lesson => ({
+            ...lesson,
+            content: buildResourceUrl(lesson.content)
+          }))
+        }));
+        
+        setModules(processedModules);
+
+        const realProgress = calculateRealProgress(processedModules);
+        console.log("🎯 Progresso real calculado:", realProgress);
+
+        setTotalLessons(realProgress.totalLessons);
+        setProgressPercentage(realProgress.progressPercentage);
+
+        const completedLessonsSet = new Set<number>();
+        processedModules.forEach(module => {
+          module.lessons.forEach(lesson => {
+            if (lesson.progress && lesson.progress.completed === true) {
+              completedLessonsSet.add(lesson.id);
+            }
+          });
+        });
+        setCompletedLessons(completedLessonsSet);
+
+        console.log("📋 Aulas concluídas:", Array.from(completedLessonsSet));
+
+        await loadExistingCertificates();
+
+        try {
+          console.log("🔍 Carregando progresso adicional do curso...");
+          const progressResponse = await getCourseProgressRef.current(Number(courseId));
+          if (!cancelled && progressResponse.data) {
+            console.log("✅ Progresso adicional carregado:", progressResponse.data);
+            const progress = progressResponse.data as Progress;
+            
+            if (progress.lastAccessDate) {
+              const date = new Date(progress.lastAccessDate);
+              setLastActivity(`Última atividade em ${date.toLocaleDateString('pt-BR', { 
+                day: 'numeric', 
+                month: 'long', 
+                year: 'numeric' 
+              })}`);
+            }
+          }
+        } catch (progressError) {
+          console.warn("⚠️ Não foi possível carregar o progresso adicional:", progressError);
+        }
+
+        const courseDocsRaw: any[] = (courseData as any)?.documents || (courseData as any)?.resources || [];
+        const courseDocs = (Array.isArray(courseDocsRaw) ? courseDocsRaw : [])
+          .map((d) => typeof d === "string" ? buildResourceUrl(d) : d?.url ? buildResourceUrl(String(d.url)) : null)
+          .filter((x: string | null): x is string => !!x && isDocumentUrl(x));
+
+        const lessonDocs = processedModules
+          .flatMap((m) => m.lessons || [])
+          .map((l) => l.content)
+          .filter((url) => isDocumentUrl(url));
+
+        const uniqueDocs = Array.from(new Set([...courseDocs, ...lessonDocs]));
+        setDocuments(uniqueDocs);
+        setSelectedDoc((prev) => prev ?? (uniqueDocs[0] || null));
+
+        if (processedModules.length > 0) {
+          setExpandedModule(processedModules[0].id);
+          
+          let firstUncompletedLesson: Lesson | null = null;
+          let firstLesson: Lesson | null = null;
+          
+          for (const module of processedModules) {
+            for (const lesson of module.lessons) {
+              if (!firstLesson) firstLesson = lesson;
+              if (!lesson.progress?.completed && !firstUncompletedLesson) {
+                firstUncompletedLesson = lesson;
+                break;
+              }
+            }
+            if (firstUncompletedLesson) break;
+          }
+          
+          const lessonToPlay = firstUncompletedLesson || firstLesson;
+          if (lessonToPlay) {
+            console.log("🎬 Selecionando aula:", lessonToPlay.title);
+            handleLessonPlay(lessonToPlay, processedModules[0].id);
+          }
+        }
+
+        console.log("✅ Todos os dados carregados com sucesso!");
+
+      } catch (err: any) {
+        if (cancelled) return;
+        console.error("❌ Erro ao carregar dados do curso:", err?.response?.data || err?.message || err);
+        setError(
+          err?.response?.data?.message || 
+          err?.message || 
+          "Não foi possível carregar os dados do curso. Verifique se o ID está correto."
+        );
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
+    fetchCourseData();
+    return () => {
+      cancelled = true;
+    };
+  }, [courseId]);
+
   if (loading) {
     return (
       <div className="content pt-0">
@@ -1417,9 +1734,6 @@ const CourseWatch = () => {
     );
   }
 
-  // Verifica se já existe certificado para este curso
-  const hasExistingCertificate = getCertificateForCurrentCourse();
-
   return (
     <div className="content pt-0">
       <StyleInjector />
@@ -1448,7 +1762,6 @@ const CourseWatch = () => {
                   {modules.length} módulos • {totalLessons} aulas
                 </div>
 
-                {/* Botão para ver progresso */}
                 <div className="mb-4">
                   <button 
                     className="btn btn-outline-primary w-100 d-flex align-items-center justify-content-center mb-2"
@@ -1458,7 +1771,6 @@ const CourseWatch = () => {
                     Ver Meu Progresso ({progressPercentage}%)
                   </button>
 
-                  {/* Botão para certificado - só aparece se curso estiver 100% concluído */}
                   {progressPercentage === 100 && (
                     <button 
                       className={`btn w-100 d-flex align-items-center justify-content-center ${
@@ -1522,10 +1834,21 @@ const CourseWatch = () => {
                             {module.lessons.map((lesson) => {
                               const isCurrent = currentLesson?.id === lesson.id;
                               const isDone = lesson.progress?.completed === true;
-                              const showMinutes = isVideoUrl(lesson.content);
+                              const contentType = getContentType(lesson.content);
+                              const showMinutes = contentType === "video";
                               const minutesText = showMinutes
                                 ? formatMinutesShort(lesson.duration || "120")
                                 : lesson.duration || "";
+                              
+                              const getIcon = () => {
+                                switch (contentType) {
+                                  case "video": return "fas fa-play";
+                                  case "pdf": return "fas fa-file-pdf";
+                                  case "image": return "fas fa-image";
+                                  case "document": return "fas fa-file";
+                                  default: return "fas fa-file";
+                                }
+                              };
                               
                               return (
                                 <div
@@ -1542,7 +1865,7 @@ const CourseWatch = () => {
                                       {isDone ? (
                                         <span className="text-success">✓</span>
                                       ) : (
-                                        <span className={isCurrent ? "text-primary" : "text-muted"}>▶</span>
+                                        <i className={`${getIcon()} ${isCurrent ? "text-primary" : "text-muted"}`}></i>
                                       )}
                                     </span>
                                     <span className={`${isCurrent ? "fw-bold text-primary" : ""} small`}>
@@ -1566,12 +1889,33 @@ const CourseWatch = () => {
             <div className="col-lg-8">
               <div className="p-3 p-lg-4">
                 <div className="mb-4">
-                  <VideoPlayer src={currentVideo} title={currentLesson?.title} />
+                  <UniversalPlayer 
+                    src={currentContent} 
+                    title={currentLesson?.title}
+                    contentType={currentContentType}
+                  />
 
                   {currentLesson && (
                     <div className="mt-3 p-3 bg-light rounded">
                       <h4 className="mb-2">{currentLesson.title}</h4>
                       <div className="d-flex flex-wrap gap-2 align-items-center mb-3">
+                        <span className={`badge ${
+                          currentContentType === "video" ? "bg-danger" :
+                          currentContentType === "pdf" ? "bg-danger" :
+                          currentContentType === "image" ? "bg-success" :
+                          "bg-secondary"
+                        }`}>
+                          <i className={`me-1 ${
+                            currentContentType === "video" ? "fas fa-video" :
+                            currentContentType === "pdf" ? "fas fa-file-pdf" :
+                            currentContentType === "image" ? "fas fa-image" :
+                            "fas fa-file"
+                          }`}></i>
+                          {currentContentType === "video" ? "Vídeo" :
+                           currentContentType === "pdf" ? "PDF" :
+                           currentContentType === "image" ? "Imagem" :
+                           "Documento"}
+                        </span>
                         {currentLesson.duration && (
                           <span className="badge bg-secondary">{currentLesson.duration}</span>
                         )}
@@ -1691,19 +2035,27 @@ const CourseWatch = () => {
                               Selecione um documento à esquerda
                             </div>
                           ) : isPdf(selectedDoc) ? (
-                            <object
-                              data={selectedDoc}
-                              type="application/pdf"
-                              className="w-100"
-                              style={{ height: "600px" }}
-                            >
-                              <iframe
-                                title="PDF"
-                                src={selectedDoc}
-                                className="w-100"
-                                style={{ height: "600px", border: 0 }}
-                              />
-                            </object>
+                            <div className="w-100" style={{ height: "600px" }}>
+                              <object
+                                data={`${selectedDoc}#view=FitH`}
+                                type="application/pdf"
+                                className="w-100 h-100"
+                              >
+                                <div className="alert alert-warning h-100 d-flex align-items-center justify-content-center">
+                                  <div className="text-center">
+                                    <p>Não foi possível carregar o PDF inline.</p>
+                                    <a
+                                      href={selectedDoc}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="btn btn-primary"
+                                    >
+                                      Abrir PDF em Nova Aba
+                                    </a>
+                                  </div>
+                                </div>
+                              </object>
+                            </div>
                           ) : isImage(selectedDoc) ? (
                             <img
                               src={selectedDoc}
@@ -1712,7 +2064,7 @@ const CourseWatch = () => {
                             />
                           ) : (
                             <div className="text-center py-5">
-                              <p>Não é possível visualizar este tipo de arquivo.</p>
+                              <p>Não é possível visualizar este tipo de arquivo inline.</p>
                               <a
                                 href={selectedDoc}
                                 target="_blank"

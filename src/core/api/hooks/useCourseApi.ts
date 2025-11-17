@@ -2,6 +2,9 @@
 import { useState } from "react";
 import { api } from "../axios";
 
+
+
+
 export const useCourseApi = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<any>(null);

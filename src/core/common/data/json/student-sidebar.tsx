@@ -21,16 +21,8 @@ export const studentSidebarData = [
         icon: 'isax isax-note-215',
         route: all_routes.studentCertificates
     },
-    {
-        title: 'Lista de Desejos',
-        icon: 'isax isax-heart5',
-        route: all_routes.studentWishlist
-    },
-    {
-        title: 'Avaliações',
-        icon: 'isax isax-star5',
-        route: all_routes.studentReviews
-    },
+   
+    
     {
         title: 'Minhas Tentativas de Quiz',
         icon: 'isax isax-award5',
@@ -42,19 +34,5 @@ export const studentSidebarData = [
         icon: 'isax isax-shopping-cart5',
         route: all_routes.studentOrderHistory
     },
-    {
-        title: 'Indicações',
-        icon: 'isax isax-tag-user5',
-        route: all_routes.studentReferral
-    },
-    {
-        title: 'Mensagens',
-        icon: 'isax isax-messages-35',
-        route: all_routes.studentMessage
-    },
-    {
-        title: 'Tickets de Suporte',
-        icon: 'isax isax-ticket5',
-        route: all_routes.studentTickets
-    },
+   
 ]
