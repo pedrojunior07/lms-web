@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { useCourseApi } from "../../../core/api/hooks/useCourseApi";
 import html2canvas from "html2canvas";
+import PdfViewer from "../../../core/common/PdfViewer/PdfViewer";
 
 // Tipos (mantidos iguais)
 interface Lesson {
@@ -545,24 +546,41 @@ const UniversalPlayer = ({
             </video>
           );
         } else {
-          return iframeBlocked ? (
-            <div className="flex-grow-1 d-flex align-items-center justify-content-center bg-light">
-              <div className="text-center p-4">
-                <i className="fas fa-video fs-1 text-warning mb-3"></i>
-                <h5>Conteúdo de Vídeo Externo</h5>
-                <p className="text-muted">Para assistir este vídeo, abra em uma nova aba.</p>
-                <a
-                  href={src}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="btn btn-primary"
-                >
-                  <i className="fas fa-external-link-alt me-2"></i>
-                  Assistir em Nova Aba
-                </a>
+          // Se o vídeo vem do servidor 192.250.224.214:3001, não usar iframe (bloqueado por CSP)
+          const isBlockedServer = src.includes('192.250.224.214:3001') || src.includes('localhost:3001');
+
+          if (iframeBlocked || isBlockedServer) {
+            return (
+              <div className="flex-grow-1 d-flex align-items-center justify-content-center bg-light">
+                <div className="text-center p-4">
+                  <i className="fas fa-video fs-1 text-warning mb-3"></i>
+                  <h5>Conteúdo de Vídeo</h5>
+                  <p className="text-muted">Por questões de segurança do servidor, o vídeo não pode ser exibido diretamente aqui.</p>
+                  <div className="d-flex flex-wrap justify-content-center gap-2">
+                    <a
+                      href={src}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="btn btn-primary"
+                    >
+                      <i className="fas fa-external-link-alt me-2"></i>
+                      Assistir em Nova Aba
+                    </a>
+                    <a
+                      href={src}
+                      download
+                      className="btn btn-success"
+                    >
+                      <i className="fas fa-download me-2"></i>
+                      Baixar Vídeo
+                    </a>
+                  </div>
+                </div>
               </div>
-            </div>
-          ) : (
+            );
+          }
+
+          return (
             <iframe
               src={`${src}${src.includes("?") ? "&" : "?"}autoplay=1`}
               title={title || "Aula em vídeo"}
@@ -576,91 +594,8 @@ const UniversalPlayer = ({
 
       case "pdf":
         return (
-          <div className="w-100 h-100 d-flex flex-column">
-            <div className="d-flex justify-content-between align-items-center p-2 bg-dark text-white">
-              <span>
-                <i className="fas fa-file-pdf me-2"></i>
-                {title || "Documento PDF"}
-              </span>
-              <div>
-                <a 
-                  href={src} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="btn btn-sm btn-light me-2"
-                >
-                  <i className="fas fa-external-link-alt me-1"></i>
-                  Abrir em Nova Aba
-                </a>
-                <a 
-                  href={src} 
-                  className="btn btn-sm btn-light me-2"
-                  download
-                >
-                  <i className="fas fa-download me-1"></i>
-                  Baixar
-                </a>
-                <button 
-                  className="btn btn-sm btn-light"
-                  onClick={handleFullscreen}
-                >
-                  <i className="fas fa-expand me-1"></i>
-                  Tela Cheia
-                </button>
-              </div>
-            </div>
-            
-            {!pdfError ? (
-              <div className="flex-grow-1">
-                <object
-                  data={`${src}#view=FitH`}
-                  type="application/pdf"
-                  className="w-100 h-100"
-                  onError={() => setPdfError(true)}
-                >
-                  <div className="alert alert-warning h-100 d-flex align-items-center justify-content-center">
-                    <div className="text-center">
-                      <p>Não foi possível carregar o PDF inline.</p>
-                      <a
-                        href={src}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="btn btn-primary"
-                      >
-                        Abrir PDF em Nova Aba
-                      </a>
-                    </div>
-                  </div>
-                </object>
-              </div>
-            ) : (
-              <div className="flex-grow-1 d-flex align-items-center justify-content-center bg-light">
-                <div className="alert alert-warning m-3 text-center">
-                  <i className="fas fa-exclamation-triangle fs-1 mb-3"></i>
-                  <h5>Não foi possível carregar o PDF inline</h5>
-                  <p>Você pode abrir o documento em uma nova aba ou fazer o download.</p>
-                  <div className="mt-3">
-                    <a
-                      href={src}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="btn btn-primary me-2"
-                    >
-                      <i className="fas fa-external-link-alt me-2"></i>
-                      Abrir em Nova Aba
-                    </a>
-                    <a
-                      href={src}
-                      download
-                      className="btn btn-success"
-                    >
-                      <i className="fas fa-download me-2"></i>
-                      Baixar PDF
-                    </a>
-                  </div>
-                </div>
-              </div>
-            )}
+          <div className="w-100 h-100">
+            <PdfViewer src={src} title={title || niceFileName(src)} />
           </div>
         );
 
@@ -2036,25 +1971,7 @@ const CourseWatch = () => {
                             </div>
                           ) : isPdf(selectedDoc) ? (
                             <div className="w-100" style={{ height: "600px" }}>
-                              <object
-                                data={`${selectedDoc}#view=FitH`}
-                                type="application/pdf"
-                                className="w-100 h-100"
-                              >
-                                <div className="alert alert-warning h-100 d-flex align-items-center justify-content-center">
-                                  <div className="text-center">
-                                    <p>Não foi possível carregar o PDF inline.</p>
-                                    <a
-                                      href={selectedDoc}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="btn btn-primary"
-                                    >
-                                      Abrir PDF em Nova Aba
-                                    </a>
-                                  </div>
-                                </div>
-                              </object>
+                              <PdfViewer src={selectedDoc} title={niceFileName(selectedDoc)} />
                             </div>
                           ) : isImage(selectedDoc) ? (
                             <img

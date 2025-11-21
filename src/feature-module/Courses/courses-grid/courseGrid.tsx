@@ -1,18 +1,21 @@
 import React, { useEffect, useState } from "react";
 import Breadcrumb from "../../../core/common/Breadcrumb/breadcrumb";
-import type { SliderSingleProps } from 'antd';  
+import type { SliderSingleProps } from 'antd';
 import { Slider } from 'antd';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import ImageWithBasePath from '../../../core/common/imageWithBasePath';
 import { all_routes } from '../../router/all_routes';
 import { useCourseApi } from "../../../core/api/hooks/useCourseApi";
 import { useCart } from "../../../core/common/context/cartContext";
 import { toast } from "react-toastify";
+import { useAuth } from "../../../core/common/context/AuthContextType";
 
 const CourseGrid = () => {
   const [selectedItems, setSelectedItems] = useState<Record<number, boolean>>({});
   const [categories, setCategories] = useState<any[]>([]);
   const { addToCart } = useCart();
+  const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
 
   const handleItemClick = (id: number) => {
     setSelectedItems((prev) => ({
@@ -23,15 +26,23 @@ const CourseGrid = () => {
 
   const { getSearchCourse, getCategoriesWithNumbers } = useCourseApi();
 
+  // Redirecionar para login se não autenticado
+  useEffect(() => {
+    if (!isAuthenticated) {
+      toast.warning("Faça login para acessar os cursos");
+      navigate(all_routes.login);
+    }
+  }, [isAuthenticated, navigate]);
+
   const [courses, setCourses] = useState<any[]>([]);
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [filters, setFilters] = useState({
-    instructorId: 1,
+    instructorId: null,
     category: null,
     minPrice: null,
     maxPrice: null,
-    status: "RASCUNHO",
+    status: "PUBLICADO",
     title: "",
     size: 9,
     sort: "title,asc",

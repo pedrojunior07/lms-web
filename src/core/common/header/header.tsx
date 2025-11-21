@@ -1093,7 +1093,7 @@ const Header = () => {
                         Entrar como Aluno
                       </Link>
                       <Link
-                        to={all_routes.homeone}
+                        to={all_routes.homefour}
                         className="btn btn-secondary d-inline-flex align-items-center justify-content-center w-100"
                       >
                         <i className="isax isax-logout me-2" />
@@ -1181,9 +1181,9 @@ const Header = () => {
                       </li>
                     </ul>
                     <div className="profile-footer">
-                      
+
                       <Link
-                        to={all_routes.homeone}
+                        to={all_routes.homefour}
                         className="btn btn-secondary d-inline-flex align-items-center justify-content-center w-100"
                       >
                         <i className="isax isax-logout me-2" />

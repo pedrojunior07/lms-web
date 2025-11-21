@@ -140,7 +140,7 @@ const StudentCourse = () => {
                     <h5 className="mb-1 text-white d-inline-flex align-items-center">
                       Ronald Richard
                       <Link
-                        to={route.instructorProfile}
+                        to={route.studentProfile}
                         className="link-light fs-16 ms-2"
                       >
                         <i className="isax isax-edit-2" />
@@ -153,16 +153,16 @@ const StudentCourse = () => {
               <div className="col-lg-6">
                 <div className="d-flex align-items-center justify-content-lg-end flex-wrap gap-2">
                   <Link
-                    to={route.becomeAnInstructor}
+                    to={route.courseList}
                     className="btn btn-white rounded-pill me-3"
                   >
-                    Torne-se Instrutor
+                    Explorar Cursos
                   </Link>
                   <Link
-                    to={route.instructorDashboard}
+                    to={route.studentDashboard}
                     className="btn btn-secondary rounded-pill"
                   >
-                    Painel do Instrutor
+                    Meu Painel
                   </Link>
                 </div>
               </div>

@@ -531,23 +531,23 @@ const StudentCertificates = () => {
                         <i className="isax isax-edit-2" />
                       </Link>
                     </h5>
-                    <p className="text-light">Student</p>
+                    <p className="text-light">Estudante</p>
                   </div>
                 </div>
               </div>
               <div className="col-lg-6">
                 <div className="d-flex align-items-center justify-content-lg-end flex-wrap gap-2">
                   <Link
-                    to={route.becomeAnInstructor}
+                    to={route.courseList}
                     className="btn btn-white rounded-pill me-3"
                   >
-                    Become an Instructor
+                    Explorar Cursos
                   </Link>
                   <Link
-                    to={route.instructorDashboard}
+                    to={route.studentDashboard}
                     className="btn btn-secondary rounded-pill"
                   >
-                    Instructor Dashboard
+                    Meu Painel
                   </Link>
                 </div>
               </div>
@@ -561,7 +561,7 @@ const StudentCertificates = () => {
             {/* sidebar */}
             <div className="col-lg-9">
               <div className="page-title d-flex align-items-center justify-content-between">
-                <h5>My Certificates ({certificates.length})</h5>
+                <h5>Meus Certificados ({certificates.length})</h5>
               </div>
               
               {certificates.length === 0 ? (

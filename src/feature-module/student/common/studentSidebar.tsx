@@ -38,7 +38,7 @@ const StudentSidebar = () => {
               </li>
               <li>
                 <Link
-                  to={all_routes.login}
+                  to={all_routes.homefour}
                   className="d-inline-flex align-items-center"
                 >
                   <i className="isax isax-logout5 me-2" />
