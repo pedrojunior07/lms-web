@@ -66,7 +66,7 @@ const RegisterWizard = () => {
               className="me-2"
               alt=""
             />{" "}
-            Weak. Must contain at least 8 characters
+            Fraco. Deve conter pelo menos 8 caracteres
           </span>
         );
       case 3:
@@ -81,7 +81,7 @@ const RegisterWizard = () => {
               className="me-2"
               alt=""
             />{" "}
-            Average. Must contain at least 1 letter or number
+            Médio. Deve conter pelo menos 1 letra ou número
           </span>
         );
       case 4:
@@ -96,7 +96,7 @@ const RegisterWizard = () => {
               className="me-2"
               alt=""
             />{" "}
-            Almost. Must contain special symbol
+            Quase lá. Deve conter símbolo especial
           </span>
         );
       case 5:
@@ -111,7 +111,7 @@ const RegisterWizard = () => {
               className="me-2"
               alt=""
             />{" "}
-            Awesome! You have a secure password.
+            Incrível! Você tem uma senha segura.
           </span>
         );
       default:
@@ -167,7 +167,6 @@ const RegisterWizard = () => {
       toast.success("Registro realizado com sucesso!", {
         toastId: "success-register",
         icon: (
-          /* Um SVG verde simples, ou use outro componente de ícone */
           <svg
             xmlns="http://www.w3.org/2000/svg"
             className="custom-toast-success-icon"
@@ -260,10 +259,10 @@ const RegisterWizard = () => {
               alt="Logo"
             />
             <Link to={route.homeone} className="link-1">
-              Back to Home
+              Voltar para Home
             </Link>
           </div>
-          <h1 className="fs-32 fw-bold topic">Sign up</h1>
+          <h1 className="fs-32 fw-bold topic">Cadastrar</h1>
           {/* <div className="progress mb-4">
             <div
               className="progress-bar progress-bar-striped"
@@ -280,19 +279,19 @@ const RegisterWizard = () => {
             {step === 1 && (
               <>
                 <div className="mb-3">
-                  <label className="form-label">Account Type *</label>
+                  <label className="form-label">Tipo de Conta *</label>
                   <select
                     name="role"
                     className="form-control"
                     onChange={handleChange}
                   >
-                    <option value="">Select</option>
-                    <option value="STUDENT">Student</option>
-                    <option value="INSTRUCTOR">Instructor</option>
+                    <option value="">Selecionar</option>
+                    <option value="STUDENT">Estudante</option>
+                    <option value="INSTRUCTOR">Instrutor</option>
                   </select>
                 </div>
                 <div className="mb-3">
-                  <label className="form-label">First Name *</label>
+                  <label className="form-label">Primeiro Nome *</label>
                   <input
                     name="firstName"
                     className="form-control"
@@ -301,7 +300,7 @@ const RegisterWizard = () => {
                   />
                 </div>
                 <div className="mb-3">
-                  <label className="form-label">Last Name *</label>
+                  <label className="form-label">Sobrenome *</label>
                   <input
                     name="lastName"
                     className="form-control"
@@ -310,7 +309,7 @@ const RegisterWizard = () => {
                   />
                 </div>
                 <div className="mb-3">
-                  <label className="form-label">Username *</label>
+                  <label className="form-label">Nome de Usuário *</label>
                   <input
                     name="userName"
                     className="form-control"
@@ -319,7 +318,7 @@ const RegisterWizard = () => {
                   />
                 </div>
                 <div className="mb-3">
-                  <label className="form-label">Phone Number *</label>
+                  <label className="form-label">Número de Telefone *</label>
                   <input
                     name="phoneNumber"
                     className="form-control"
@@ -328,20 +327,20 @@ const RegisterWizard = () => {
                   />
                 </div>
                 <div className="mb-3">
-                  <label className="form-label">Gender *</label>
+                  <label className="form-label">Gênero *</label>
                   <select
                     name="gender"
                     className="form-control"
                     value={form.gender}
                     onChange={handleChange}
                   >
-                    <option value="">Select</option>
-                    <option value="MALE">Male</option>
-                    <option value="FEMALE">Female</option>
+                    <option value="">Selecionar</option>
+                    <option value="MALE">Masculino</option>
+                    <option value="FEMALE">Feminino</option>
                   </select>
                 </div>
                 <div className="mb-3">
-                  <label className="form-label">Date of Birth *</label>
+                  <label className="form-label">Data de Nascimento *</label>
                   <input
                     type="date"
                     name="dob"
@@ -357,7 +356,7 @@ const RegisterWizard = () => {
               <>
                 <div className="mb-3 position-relative">
                   <label className="form-label">
-                    Email<span className="text-danger ms-1">*</span>
+                    E-mail<span className="text-danger ms-1">*</span>
                   </label>
                   <div className="position-relative">
                     <input
@@ -374,7 +373,7 @@ const RegisterWizard = () => {
                 </div>
                 <div className="mb-3 position-relative">
                   <label className="form-label">
-                    New Password <span className="text-danger"> *</span>
+                    Nova Senha <span className="text-danger"> *</span>
                   </label>
                   <div className="position-relative" id="passwordInput">
                     <input
@@ -415,7 +414,7 @@ const RegisterWizard = () => {
                 </div>
                 <div className="mb-3 position-relative">
                   <label className="form-label">
-                    Confirm Password <span className="text-danger"> *</span>
+                    Confirmar Senha <span className="text-danger"> *</span>
                   </label>
                   <div className="position-relative">
                     <input
@@ -451,13 +450,13 @@ const RegisterWizard = () => {
                       className="form-check-label mb-0 d-inline-flex remember-me fs-14"
                       htmlFor="flexCheckDefault"
                     >
-                      I agree with{" "}
+                      Concordo com{" "}
                       <Link to={route.termsConditions} className="link-2 mx-2">
-                        Terms of Service
+                        Termos de Serviço
                       </Link>{" "}
-                      and{" "}
+                      e{" "}
                       <Link to={route.privacyPolicy} className="link-2 mx-2">
-                        Privacy Policy
+                        Política de Privacidade
                       </Link>
                     </label>
                   </div>
@@ -472,7 +471,7 @@ const RegisterWizard = () => {
                   className="btn btn-light"
                   onClick={prevStep}
                 >
-                  Back
+                  Voltar
                 </button>
               )}
               {step < 2 ? (
@@ -481,7 +480,7 @@ const RegisterWizard = () => {
                   className="btn btn-secondary"
                   onClick={nextStep}
                 >
-                  Next
+                  Próximo
                 </button>
               ) : (
                 <button
@@ -499,7 +498,7 @@ const RegisterWizard = () => {
                       Enviando...
                     </>
                   ) : (
-                    "Register"
+                    "Cadastrar"
                   )}
                 </button>
               )}
@@ -507,9 +506,9 @@ const RegisterWizard = () => {
           </form>
 
           <div className="fs-14 fw-normal d-flex align-items-center justify-content-center">
-            Already have an account?
+            Já tem uma conta?
             <Link to={route.login} className="link-2 ms-1">
-              Login
+              Entrar
             </Link>
           </div>
         </div>

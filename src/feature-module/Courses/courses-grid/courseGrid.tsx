@@ -1,1038 +1,514 @@
-import React from 'react'
-import Breadcrumb from '../../../core/common/Breadcrumb/breadcrumb'
+import React, { useEffect, useState } from "react";
+import Breadcrumb from "../../../core/common/Breadcrumb/breadcrumb";
 import type { SliderSingleProps } from 'antd';  
-import { Slider } from 'antd'
+import { Slider } from 'antd';
 import { Link } from 'react-router-dom';
 import ImageWithBasePath from '../../../core/common/imageWithBasePath';
 import { all_routes } from '../../router/all_routes';
+import { useCourseApi } from "../../../core/api/hooks/useCourseApi";
+import { useCart } from "../../../core/common/context/cartContext";
+import { toast } from "react-toastify";
 
 const CourseGrid = () => {
-  const formatter: NonNullable<SliderSingleProps['tooltip']>['formatter'] = (value) => `$${value}`;
+  const [selectedItems, setSelectedItems] = useState<Record<number, boolean>>({});
+  const [categories, setCategories] = useState<any[]>([]);
+  const { addToCart } = useCart();
+
+  const handleItemClick = (id: number) => {
+    setSelectedItems((prev) => ({
+      ...prev,
+      [id]: !prev[id],
+    }));
+  };
+
+  const { getSearchCourse, getCategoriesWithNumbers } = useCourseApi();
+
+  const [courses, setCourses] = useState<any[]>([]);
+  const [page, setPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [filters, setFilters] = useState({
+    instructorId: 1,
+    category: null,
+    minPrice: null,
+    maxPrice: null,
+    status: "RASCUNHO",
+    title: "",
+    size: 9,
+    sort: "title,asc",
+  });
+
+  // Função para obter a URL da thumbnail
+  const getThumbnailUrl = (thumbnailPath: string) => {
+    if (!thumbnailPath) {
+      return "/assets/img/course/course-02.jpg";
+    }
+    return thumbnailPath;
+  };
+
+  const fetchCourses = async () => {
+    try {
+      const data = await getSearchCourse({ ...filters, page });
+      console.log("📊 Dados dos cursos (Grid):", data);
+      
+      if (data.data && data.data.content) {
+        const processedCourses = data.data.content.map((course: any) => ({
+          ...course,
+          thumbnailUrl: getThumbnailUrl(course.thumbnailPath)
+        }));
+        
+        console.log("📊 Cursos processados (Grid):", processedCourses);
+        setCourses(processedCourses);
+        setTotalPages(data.data.totalPages);
+      }
+      
+      const cat = await getCategoriesWithNumbers();
+      setCategories(cat.data);
+      
+    } catch (error) {
+      console.error("Erro ao buscar cursos:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchCourses();
+  }, [page, filters]);
+
+  const handleAddToCart = (e: React.MouseEvent, course: any) => {
+    e.preventDefault();
+    addToCart(course);
+    toast.success(`${course.title} adicionado ao carrinho!`, {
+      position: "top-right",
+      autoClose: 3000,
+      hideProgressBar: false,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+      progress: undefined,
+    });
+  };
+
+  const goToPage = (newPage: number) => {
+    if (newPage >= 0 && newPage < totalPages) {
+      setPage(newPage);
+    }
+  };
+
+  const formatter: NonNullable<SliderSingleProps['tooltip']>['formatter'] = (value) => `MZN${value}`;
+
   return (
     <>
-  
-  <Breadcrumb title='Course Grid'/>
-  
-  {/* Course */}
-  <section className="course-content">
-    <div className="container">
-      <div className="row align-items-baseline">
-        <div className="col-lg-3 theiaStickySidebar">
-          <div className="filter-clear">
-            <div className="clear-filter mb-4 pb-lg-2 d-flex align-items-center justify-content-between">
-              <h5>
-                <i className="feather-filter me-2" />
-                Filters
-              </h5>
-              <Link to="#" className="clear-text">
-                Clear
-              </Link>
-            </div>
-            <div className="accordion accordion-customicon1 accordions-items-seperate">
-              <div className="accordion-item">
-                <h2 className="accordion-header" id="headingcustomicon1One">
-                  <Link
-                    to="#"
-                    className="accordion-button"
-                    data-bs-toggle="collapse"
-                    data-bs-target="#collapsecustomicon1One"
-                    aria-expanded="false"
-                    aria-controls="collapsecustomicon1One"
-                  >
-                    Categories <i className="fa-solid fa-chevron-down" />
+      <Breadcrumb title='Grade de Cursos'/>
+      
+      {/* Course */}
+      <section className="course-content">
+        <div className="container">
+          <div className="row align-items-baseline">
+            <div className="col-lg-3 theiaStickySidebar">
+              <div className="filter-clear">
+                <div className="clear-filter mb-4 pb-lg-2 d-flex align-items-center justify-content-between">
+                  <h5>
+                    <i className="feather-filter me-2" />
+                    Filtros
+                  </h5>
+                  <Link to="#" className="clear-text">
+                    Limpar
                   </Link>
-                </h2>
-                <div
-                  id="collapsecustomicon1One"
-                  className="accordion-collapse collapse show"
-                  aria-labelledby="headingcustomicon1One"
-                  data-bs-parent="#accordioncustomicon1Example"
-                  style={{}}
-                >
-                  <div className="accordion-body">
-                    <div>
-                      <label className="custom_check">
-                        <input type="checkbox" name="select_specialist" />
-                        <span className="checkmark" /> Backend (3)
-                      </label>
-                    </div>
-                    <div>
-                      <label className="custom_check">
-                        <input type="checkbox" name="select_specialist" />
-                        <span className="checkmark" /> CSS (2)
-                      </label>
-                    </div>
-                    <div>
-                      <label className="custom_check">
-                        <input type="checkbox" name="select_specialist" />
-                        <span className="checkmark" /> Frontend (2)
-                      </label>
-                    </div>
-                    <div>
-                      <label className="custom_check">
-                        <input type="checkbox" name="select_specialist" />
-                        <span className="checkmark" /> General (2)
-                      </label>
-                    </div>
-                    <div>
-                      <label className="custom_check">
-                        <input
-                          type="checkbox"
-                          name="select_specialist"
-                          defaultChecked
-                        />
-                        <span className="checkmark" /> IT &amp; Software (2)
-                      </label>
-                    </div>
-                    <div>
-                      <label className="custom_check">
-                        <input type="checkbox" name="select_specialist" />
-                        <span className="checkmark" /> Photography (2)
-                      </label>
-                    </div>
-                    <div>
-                      <label className="custom_check">
-                        <input type="checkbox" name="select_specialist" />
-                        <span className="checkmark" /> Programming Language (3)
-                      </label>
-                    </div>
-                    <div>
-                      <label className="custom_check mb-0">
-                        <input type="checkbox" name="select_specialist" />
-                        <span className="checkmark" /> Technology (2)
-                      </label>
-                    </div>
-                    <Link to="#" className="see-more-btn">
-                      See More
-                    </Link>
-                  </div>
                 </div>
-              </div>
-              <div className="accordion-item">
-                <h2 className="accordion-header" id="headingcustomicon1Two">
-                  <Link
-                    to="#"
-                    className="accordion-button"
-                    data-bs-toggle="collapse"
-                    data-bs-target="#collapsecustomicon1Two"
-                    aria-expanded="false"
-                    aria-controls="collapsecustomicon1Two"
-                  >
-                    Instructors
-                    <i className="fa-solid fa-chevron-down" />
-                  </Link>
-                </h2>
-                <div
-                  id="collapsecustomicon1Two"
-                  className="accordion-collapse collapse show"
-                  aria-labelledby="headingcustomicon1Two"
-                  data-bs-parent="#accordioncustomicon1Example"
-                >
-                  <div className="accordion-body">
-                    <div>
-                      <label className="custom_check">
-                        <input type="checkbox" name="select_specialist" />
-                        <span className="checkmark" /> Keny White (10)
-                      </label>
-                    </div>
-                    <div>
-                      <label className="custom_check">
-                        <input type="checkbox" name="select_specialist" />
-                        <span className="checkmark" /> Hinata Hyuga (5)
-                      </label>
-                    </div>
-                    <div>
-                      <label className="custom_check">
-                        <input type="checkbox" name="select_specialist" />
-                        <span className="checkmark" /> John Doe (3)
-                      </label>
-                    </div>
-                    <div>
-                      <label className="custom_check mb-0">
-                        <input
-                          type="checkbox"
-                          name="select_specialist"
-                          defaultChecked
-                        />
-                        <span className="checkmark" /> Nicole Brown
-                      </label>
-                    </div>
-                    <Link to="#" className="see-more-btn">
-                      See More
-                    </Link>
-                  </div>
-                </div>
-              </div>
-              <div className="accordion-item">
-                <h2 className="accordion-header" id="headingcustomicon1Three">
-                  <Link
-                    to="#"
-                    className="accordion-button"
-                    data-bs-toggle="collapse"
-                    data-bs-target="#collapsecustomicon1Three"
-                    aria-expanded="false"
-                    aria-controls="collapsecustomicon1Three"
-                  >
-                    Price
-                    <i className="fa-solid fa-chevron-down" />
-                  </Link>
-                </h2>
-                <div
-                  id="collapsecustomicon1Three"
-                  className="accordion-collapse collapse show"
-                  aria-labelledby="headingcustomicon1Three"
-                  data-bs-parent="#accordioncustomicon1Example"
-                >
-                  <div className="accordion-body">
-                    <div>
-                      <label className="custom_check custom_one">
-                        <input type="checkbox" name="select_specialist" />
-                        <span className="checkmark" /> All (10)
-                      </label>
-                    </div>
-                    <div>
-                      <label className="custom_check custom_one">
-                        <input type="checkbox" name="select_specialist" />
-                        <span className="checkmark" /> Free (5)
-                      </label>
-                    </div>
-                    <div>
-                      <label className="custom_check custom_one mb-0">
-                        <input type="checkbox" name="select_specialist" />
-                        <span className="checkmark" /> Paid (3)
-                      </label>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div className="accordion-item">
-                <h2 className="accordion-header" id="headingcustomicon1Four">
-                  <Link
-                    to="#"
-                    className="accordion-button"
-                    data-bs-toggle="collapse"
-                    data-bs-target="#collapsecustomicon1Four"
-                    aria-expanded="false"
-                    aria-controls="collapsecustomicon1Four"
-                  >
-                    Range
-                    <i className="fa-solid fa-chevron-down" />
-                  </Link>
-                </h2>
-                <div
-                  id="collapsecustomicon1Four"
-                  className="accordion-collapse collapse show"
-                  aria-labelledby="headingcustomicon1Four"
-                  data-bs-parent="#accordioncustomicon1Example"
-                >
-                  <div className="accordion-body">
-                    <div className="filter-range">
-                    <Slider range tooltip={{ formatter }}  min={50} max={5695} defaultValue={[50, 2000]}  />
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div className="accordion-item">
-                <h2 className="accordion-header" id="headingcustomicon1Five">
-                  <Link
-                    to="#"
-                    className="accordion-button"
-                    data-bs-toggle="collapse"
-                    data-bs-target="#collapsecustomicon1Five"
-                    aria-expanded="false"
-                    aria-controls="collapsecustomicon1Five"
-                  >
-                    Level
-                    <i className="fa-solid fa-chevron-down" />
-                  </Link>
-                </h2>
-                <div
-                  id="collapsecustomicon1Five"
-                  className="accordion-collapse collapse show"
-                  aria-labelledby="headingcustomicon1Five"
-                  data-bs-parent="#accordioncustomicon1Example"
-                >
-                  <div className="accordion-body">
-                    <div>
-                      <label className="custom_check custom_one">
-                        <input type="checkbox" name="select_specialist" />
-                        <span className="checkmark" />
-                        Beginner (10)
-                      </label>
-                    </div>
-                    <div>
-                      <label className="custom_check custom_one">
-                        <input type="checkbox" name="select_specialist" />
-                        <span className="checkmark" /> Intermediate (5)
-                      </label>
-                    </div>
-                    <div>
-                      <label className="custom_check custom_one">
-                        <input type="checkbox" name="select_specialist" />
-                        <span className="checkmark" />
-                        Advanced (21)
-                      </label>
-                    </div>
-                    <div>
-                      <label className="custom_check custom_one mb-0">
-                        <input type="checkbox" name="select_specialist" />
-                        <span className="checkmark" />
-                        Expert (3)
-                      </label>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div className="accordion-item">
-                <h2 className="accordion-header" id="headingcustomicon1Six">
-                  <Link
-                    to="#"
-                    className="accordion-button"
-                    data-bs-toggle="collapse"
-                    data-bs-target="#collapsecustomicon1Six"
-                    aria-expanded="false"
-                    aria-controls="collapsecustomicon1Six"
-                  >
-                    Reviews <i className="fa-solid fa-chevron-down" />
-                  </Link>
-                </h2>
-                <div
-                  id="collapsecustomicon1Six"
-                  className="accordion-collapse collapse show"
-                  aria-labelledby="headingcustomicon1Six"
-                  data-bs-parent="#accordioncustomicon1Example"
-                >
-                  <div className="accordion-body">
-                    <div>
-                      <label className="custom_check custom_one">
-                        <input type="checkbox" name="select_specialist" />
-                        <span className="checkmark" />
-                        <i className="fa-solid fa-star text-warning me-1" />
-                        <i className="fa-solid fa-star text-warning me-1" />
-                        <i className="fa-solid fa-star text-warning me-1" />
-                        <i className="fa-solid fa-star text-warning me-1" />
-                        <i className="fa-solid fa-star text-warning" />
-                      </label>
-                    </div>
-                    <div>
-                      <label className="custom_check custom_one">
-                        <input type="checkbox" name="select_specialist" />
-                        <span className="checkmark" />
-                        <i className="fa-solid fa-star text-warning me-1" />
-                        <i className="fa-solid fa-star text-warning me-1" />
-                        <i className="fa-solid fa-star text-warning me-1" />
-                        <i className="fa-solid fa-star text-warning me-1" />
-                        <i className="fa-solid fa-star text-light" />
-                      </label>
-                    </div>
-                    <div>
-                      <label className="custom_check custom_one">
-                        <input type="checkbox" name="select_specialist" />
-                        <span className="checkmark" />
-                        <i className="fa-solid fa-star text-warning me-1" />
-                        <i className="fa-solid fa-star text-warning me-1" />
-                        <i className="fa-solid fa-star text-warning me-1" />
-                        <i className="fa-solid fa-star text-light me-1" />
-                        <i className="fa-solid fa-star text-light" />
-                      </label>
-                    </div>
-                    <div>
-                      <label className="custom_check custom_one">
-                        <input type="checkbox" name="select_specialist" />
-                        <span className="checkmark" />
-                        <i className="fa-solid fa-star text-warning me-1" />
-                        <i className="fa-solid fa-star text-warning me-1" />
-                        <i className="fa-solid fa-star text-light me-1" />
-                        <i className="fa-solid fa-star text-light me-1" />
-                        <i className="fa-solid fa-star text-light" />
-                      </label>
-                    </div>
-                    <div>
-                      <label className="custom_check custom_one mb-0">
-                        <input type="checkbox" name="select_specialist" />
-                        <span className="checkmark" />
-                        <i className="fa-solid fa-star text-warning me-1" />
-                        <i className="fa-solid fa-star text-light me-1" />
-                        <i className="fa-solid fa-star text-light me-1" />
-                        <i className="fa-solid fa-star text-light me-1" />
-                        <i className="fa-solid fa-star text-light" />
-                      </label>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div className="col-lg-9">
-          {/* Filter */}
-          <div className="showing-list mb-4">
-            <div className="row align-items-center">
-              <div className="col-lg-4">
-                <div className="show-result text-center text-lg-start">
-                  <h6 className="fw-medium">Showing 1-9 of 50 results</h6>
-                </div>
-              </div>
-              <div className="col-lg-8">
-                <div className="show-filter add-course-info">
-                  <form action="#">
-                    <div className="d-sm-flex justify-content-center justify-content-lg-end mb-1 mb-lg-0">
-                      <div className="view-icons mb-2 mb-sm-0">
-                        <Link to={all_routes.courseGrid} className="grid-view active">
-                          <i className="isax isax-element-3" />
-                        </Link>
-                        <Link to={all_routes.courseList} className="list-view">
-                          <i className="isax isax-task" />
-                        </Link>
-                      </div>
-                      <select className="form-select">
-                        <option>Newly Published </option>
-                        <option>Trending Courses</option>
-                        <option>Top Rated</option>
-                        <option>Free Courses</option>
-                      </select>
-                      <div className=" search-group">
-                        <i className="isax isax-search-normal-1" />
-                        <input
-                          type="text"
-                          className="form-control"
-                          placeholder="Search"
-                        />
-                      </div>
-                    </div>
-                  </form>
-                </div>
-              </div>
-            </div>
-          </div>
-          {/* /Filter */}
-          <div className="row">
-            <div className="col-xl-4 col-md-6">
-              <div className="course-item-two course-item mx-0">
-                <div className="course-img">
-                  <Link to={all_routes.courseDetails}>
-                    <ImageWithBasePath
-                      src="assets/img/course/course-01.jpg"
-                      alt="img"
-                      className="img-fluid"
-                    />
-                  </Link>
-                  <div className="position-absolute start-0 top-0 d-flex align-items-start w-100 z-index-2 p-3">
-                    <div className="badge text-bg-danger">15% off</div>
-                    <Link to="#" className="fav-icon ms-auto">
-                      <i className="isax isax-heart" />
-                    </Link>
-                  </div>
-                </div>
-                <div className="course-content">
-                  <div className="d-flex justify-content-between mb-2">
-                    <div className="d-flex align-items-center">
+                <div className="accordion accordion-customicon1 accordions-items-seperate">
+                  <div className="accordion-item">
+                    <h2 className="accordion-header" id="headingcustomicon1One">
                       <Link
-                        to={all_routes.instructorDetails}
-                        className="avatar avatar-sm"
+                        to="#"
+                        className="accordion-button"
+                        data-bs-toggle="collapse"
+                        data-bs-target="#collapsecustomicon1One"
+                        aria-expanded="false"
+                        aria-controls="collapsecustomicon1One"
                       >
-                        <ImageWithBasePath
-                          src="assets/img/user/user-29.jpg"
-                          alt="img"
-                          className="img-fluid avatar avatar-sm rounded-circle"
-                        />
+                        Categorias <i className="fa-solid fa-chevron-down" />
                       </Link>
-                      <div className="ms-2">
-                        <Link
-                          to={all_routes.instructorDetails}
-                          className="link-default fs-14"
-                        >
-                          Brenda Slaton
+                    </h2>
+                    <div
+                      id="collapsecustomicon1One"
+                      className="accordion-collapse collapse show"
+                      aria-labelledby="headingcustomicon1One"
+                      data-bs-parent="#accordioncustomicon1Example"
+                      style={{}}
+                    >
+                      <div className="accordion-body">
+                        {categories.map((category) => (
+                          <div key={category.id}>
+                            <label className="custom_check">
+                              <input type="checkbox" name="select_category" />
+                              <span className="checkmark" /> 
+                              {category.name} ({category.courseCount || 0})
+                            </label>
+                          </div>
+                        ))}
+                        <Link to="#" className="see-more-btn">
+                          Ver Mais
                         </Link>
                       </div>
                     </div>
-                    <span className="badge badge-light rounded-pill bg-light d-inline-flex align-items-center fs-13 fw-medium mb-0">
-                      Design
-                    </span>
                   </div>
-                  <h6 className="title mb-2">
-                    <Link to={all_routes.courseDetails}>
-                      Information About UI/UX Design Degree
-                    </Link>
-                  </h6>
-                  <p className="d-flex align-items-center mb-3">
-                    <i className="fa-solid fa-star text-warning me-2" />
-                    4.9 (200 Reviews)
-                  </p>
-                  <div className="d-flex align-items-center justify-content-between">
-                    <h5 className="text-secondary mb-0">$120</h5>
-                    <Link
-                      to={all_routes.courseDetails}
-                      className="btn btn-dark btn-sm d-inline-flex align-items-center"
-                    >
-                      View Course
-                      <i className="isax isax-arrow-right-3 ms-1" />
-                    </Link>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="col-xl-4 col-md-6">
-              <div className="course-item-two course-item mx-0">
-                <div className="course-img">
-                  <Link to={all_routes.courseDetails}>
-                    <ImageWithBasePath
-                      src="assets/img/course/course-02.jpg"
-                      alt="img"
-                      className="img-fluid"
-                    />
-                  </Link>
-                  <div className="position-absolute start-0 top-0 d-flex align-items-start w-100 z-index-2 p-3">
-                    <Link to="#" className="fav-icon ms-auto">
-                      <i className="isax isax-heart" />
-                    </Link>
-                  </div>
-                </div>
-                <div className="course-content">
-                  <div className="d-flex justify-content-between mb-2">
-                    <div className="d-flex align-items-center">
+                  <div className="accordion-item">
+                    <h2 className="accordion-header" id="headingcustomicon1Two">
                       <Link
-                        to={all_routes.instructorDetails}
-                        className="avatar avatar-sm"
+                        to="#"
+                        className="accordion-button"
+                        data-bs-toggle="collapse"
+                        data-bs-target="#collapsecustomicon1Two"
+                        aria-expanded="false"
+                        aria-controls="collapsecustomicon1Two"
                       >
-                        <ImageWithBasePath
-                          src="assets/img/user/user-30.jpg"
-                          alt="img"
-                          className="img-fluid avatar avatar-sm rounded-circle"
-                        />
+                        Instrutores
+                        <i className="fa-solid fa-chevron-down" />
                       </Link>
-                      <div className="ms-2">
-                        <Link
-                          to={all_routes.instructorDetails}
-                          className="link-default fs-14"
-                        >
-                          Ana Reyes
+                    </h2>
+                    <div
+                      id="collapsecustomicon1Two"
+                      className="accordion-collapse collapse show"
+                      aria-labelledby="headingcustomicon1Two"
+                      data-bs-parent="#accordioncustomicon1Example"
+                    >
+                      <div className="accordion-body">
+                        {/* Instrutores podem ser adicionados posteriormente */}
+                        <div>
+                          <label className="custom_check">
+                            <input type="checkbox" name="select_specialist" />
+                            <span className="checkmark" /> Todos os Instrutores
+                          </label>
+                        </div>
+                        <Link to="#" className="see-more-btn">
+                          Ver Mais
                         </Link>
                       </div>
                     </div>
-                    <span className="badge badge-light rounded-pill bg-light d-inline-flex align-items-center fs-13 fw-medium mb-0">
-                      Wordpress
-                    </span>
                   </div>
-                  <h6 className="title mb-2">
-                    <Link to={all_routes.courseDetails}>
-                      Wordpress for Beginners - Master Wordpress Quickly
-                    </Link>
-                  </h6>
-                  <p className="d-flex align-items-center mb-3">
-                    <i className="fa-solid fa-star text-warning me-2" />
-                    4.4 (160 Reviews)
-                  </p>
-                  <div className="d-flex align-items-center justify-content-between">
-                    <h5 className="text-secondary mb-0">$140</h5>
-                    <Link
-                      to={all_routes.courseDetails}
-                      className="btn btn-dark btn-sm d-inline-flex align-items-center"
-                    >
-                      View Course
-                      <i className="isax isax-arrow-right-3 ms-1" />
-                    </Link>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="col-xl-4 col-md-6">
-              <div className="course-item-two course-item mx-0">
-                <div className="course-img">
-                  <Link to={all_routes.courseDetails}>
-                    <ImageWithBasePath
-                      src="assets/img/course/course-03.jpg"
-                      alt="img"
-                      className="img-fluid"
-                    />
-                  </Link>
-                  <div className="position-absolute start-0 top-0 d-flex align-items-start w-100 z-index-2 p-3">
-                    <Link to="#" className="fav-icon ms-auto">
-                      <i className="isax isax-heart" />
-                    </Link>
-                  </div>
-                </div>
-                <div className="course-content">
-                  <div className="d-flex justify-content-between mb-2">
-                    <div className="d-flex align-items-center">
+                  <div className="accordion-item">
+                    <h2 className="accordion-header" id="headingcustomicon1Three">
                       <Link
-                        to={all_routes.instructorDetails}
-                        className="avatar avatar-sm"
+                        to="#"
+                        className="accordion-button"
+                        data-bs-toggle="collapse"
+                        data-bs-target="#collapsecustomicon1Three"
+                        aria-expanded="false"
+                        aria-controls="collapsecustomicon1Three"
                       >
-                        <ImageWithBasePath
-                          src="assets/img/user/user-31.jpg"
-                          alt="img"
-                          className="img-fluid avatar avatar-sm rounded-circle"
-                        />
+                        Preço
+                        <i className="fa-solid fa-chevron-down" />
                       </Link>
-                      <div className="ms-2">
-                        <Link
-                          to={all_routes.instructorDetails}
-                          className="link-default fs-14"
-                        >
-                          Andrew Pirtle
-                        </Link>
+                    </h2>
+                    <div
+                      id="collapsecustomicon1Three"
+                      className="accordion-collapse collapse show"
+                      aria-labelledby="headingcustomicon1Three"
+                      data-bs-parent="#accordioncustomicon1Example"
+                    >
+                      <div className="accordion-body">
+                        <div>
+                          <label className="custom_check custom_one">
+                            <input type="checkbox" name="select_specialist" />
+                            <span className="checkmark" /> Todos ({courses.length})
+                          </label>
+                        </div>
+                        <div>
+                          <label className="custom_check custom_one">
+                            <input type="checkbox" name="select_specialist" />
+                            <span className="checkmark" /> Gratuitos ({courses.filter(c => c.price === 0).length})
+                          </label>
+                        </div>
+                        <div>
+                          <label className="custom_check custom_one mb-0">
+                            <input type="checkbox" name="select_specialist" />
+                            <span className="checkmark" /> Pagos ({courses.filter(c => c.price > 0).length})
+                          </label>
+                        </div>
                       </div>
                     </div>
-                    <span className="badge badge-light rounded-pill bg-light d-inline-flex align-items-center fs-13 fw-medium mb-0">
-                      Design
-                    </span>
                   </div>
-                  <h6 className="title mb-2">
-                    <Link to={all_routes.courseDetails}>
-                      Sketch from A to Z (2024): Become an app designer
-                    </Link>
-                  </h6>
-                  <p className="d-flex align-items-center mb-3">
-                    <i className="fa-solid fa-star text-warning me-2" />
-                    4.4 (160 Reviews)
-                  </p>
-                  <div className="d-flex align-items-center justify-content-between">
-                    <h5 className="text-secondary mb-0">$140</h5>
-                    <Link
-                      to={all_routes.courseDetails}
-                      className="btn btn-dark btn-sm d-inline-flex align-items-center"
-                    >
-                      View Course
-                      <i className="isax isax-arrow-right-3 ms-1" />
-                    </Link>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="col-xl-4 col-md-6">
-              <div className="course-item-two course-item mx-0">
-                <div className="course-img">
-                  <Link to={all_routes.courseDetails}>
-                    <ImageWithBasePath
-                      src="assets/img/course/course-04.jpg"
-                      alt="img"
-                      className="img-fluid"
-                    />
-                  </Link>
-                  <div className="position-absolute start-0 top-0 d-flex align-items-start w-100 z-index-2 p-3">
-                    <Link to="#" className="fav-icon ms-auto">
-                      <i className="isax isax-heart" />
-                    </Link>
-                  </div>
-                </div>
-                <div className="course-content">
-                  <div className="d-flex justify-content-between mb-2">
-                    <div className="d-flex align-items-center">
+                  <div className="accordion-item">
+                    <h2 className="accordion-header" id="headingcustomicon1Four">
                       <Link
-                        to={all_routes.instructorDetails}
-                        className="avatar avatar-sm"
+                        to="#"
+                        className="accordion-button"
+                        data-bs-toggle="collapse"
+                        data-bs-target="#collapsecustomicon1Four"
+                        aria-expanded="false"
+                        aria-controls="collapsecustomicon1Four"
                       >
-                        <ImageWithBasePath
-                          src="assets/img/user/user-32.jpg"
-                          alt="img"
-                          className="img-fluid avatar avatar-sm rounded-circle"
-                        />
+                        Faixa de Preço
+                        <i className="fa-solid fa-chevron-down" />
                       </Link>
-                      <div className="ms-2">
-                        <Link
-                          to={all_routes.instructorDetails}
-                          className="link-default fs-14"
-                        >
-                          Christy Garner
-                        </Link>
+                    </h2>
+                    <div
+                      id="collapsecustomicon1Four"
+                      className="accordion-collapse collapse show"
+                      aria-labelledby="headingcustomicon1Four"
+                      data-bs-parent="#accordioncustomicon1Example"
+                    >
+                      <div className="accordion-body">
+                        <div className="filter-range">
+                          <Slider 
+                            range 
+                            tooltip={{ formatter }}  
+                            min={0} 
+                            max={5000} 
+                            defaultValue={[0, 2000]}  
+                          />
+                        </div>
                       </div>
                     </div>
-                    <span className="badge badge-light rounded-pill bg-light d-inline-flex align-items-center fs-13 fw-medium mb-0">
-                      Programming
-                    </span>
                   </div>
-                  <h6 className="title mb-2">
-                    <Link to={all_routes.courseDetails}>
-                      Build Responsive Real World Websites with Crash Course
-                    </Link>
-                  </h6>
-                  <p className="d-flex align-items-center mb-3">
-                    <i className="fa-solid fa-star text-warning me-2" />
-                    4.2 (220 Reviews)
-                  </p>
-                  <div className="d-flex align-items-center justify-content-between">
-                    <h5 className="text-secondary mb-0">$200</h5>
-                    <Link
-                      to={all_routes.courseDetails}
-                      className="btn btn-dark btn-sm d-inline-flex align-items-center"
-                    >
-                      View Course
-                      <i className="isax isax-arrow-right-3 ms-1" />
-                    </Link>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="col-xl-4 col-md-6">
-              <div className="course-item-two course-item mx-0">
-                <div className="course-img">
-                  <Link to={all_routes.courseDetails}>
-                    <ImageWithBasePath
-                      src="assets/img/course/course-05.jpg"
-                      alt="img"
-                      className="img-fluid"
-                    />
-                  </Link>
-                  <div className="position-absolute start-0 top-0 d-flex align-items-start w-100 z-index-2 p-3">
-                    <Link to="#" className="fav-icon ms-auto">
-                      <i className="isax isax-heart" />
-                    </Link>
-                  </div>
-                </div>
-                <div className="course-content">
-                  <div className="d-flex justify-content-between mb-2">
-                    <div className="d-flex align-items-center">
+                  <div className="accordion-item">
+                    <h2 className="accordion-header" id="headingcustomicon1Five">
                       <Link
-                        to={all_routes.instructorDetails}
-                        className="avatar avatar-sm"
+                        to="#"
+                        className="accordion-button"
+                        data-bs-toggle="collapse"
+                        data-bs-target="#collapsecustomicon1Five"
+                        aria-expanded="false"
+                        aria-controls="collapsecustomicon1Five"
                       >
-                        <ImageWithBasePath
-                          src="assets/img/user/user-32.jpg"
-                          alt="img"
-                          className="img-fluid avatar avatar-sm rounded-circle"
-                        />
+                        Nível
+                        <i className="fa-solid fa-chevron-down" />
                       </Link>
-                      <div className="ms-2">
-                        <Link
-                          to={all_routes.instructorDetails}
-                          className="link-default fs-14"
-                        >
-                          Justin Gregory
-                        </Link>
+                    </h2>
+                    <div
+                      id="collapsecustomicon1Five"
+                      className="accordion-collapse collapse show"
+                      aria-labelledby="headingcustomicon1Five"
+                      data-bs-parent="#accordioncustomicon1Example"
+                    >
+                      <div className="accordion-body">
+                        <div>
+                          <label className="custom_check custom_one">
+                            <input type="checkbox" name="select_specialist" />
+                            <span className="checkmark" />
+                            Iniciante
+                          </label>
+                        </div>
+                        <div>
+                          <label className="custom_check custom_one">
+                            <input type="checkbox" name="select_specialist" />
+                            <span className="checkmark" /> Intermediário
+                          </label>
+                        </div>
+                        <div>
+                          <label className="custom_check custom_one">
+                            <input type="checkbox" name="select_specialist" />
+                            <span className="checkmark" />
+                            Avançado
+                          </label>
+                        </div>
+                        <div>
+                          <label className="custom_check custom_one mb-0">
+                            <input type="checkbox" name="select_specialist" />
+                            <span className="checkmark" />
+                            Especialista
+                          </label>
+                        </div>
                       </div>
                     </div>
-                    <span className="badge badge-light rounded-pill bg-light d-inline-flex align-items-center fs-13 fw-medium mb-0">
-                      Programming
-                    </span>
-                  </div>
-                  <h6 className="title mb-2">
-                    <Link to={all_routes.courseDetails}>
-                      Learn JavaScript and Express to become a Expert
-                    </Link>
-                  </h6>
-                  <p className="d-flex align-items-center mb-3">
-                    <i className="fa-solid fa-star text-warning me-2" />
-                    4.4 (180 Reviews)
-                  </p>
-                  <div className="d-flex align-items-center justify-content-between">
-                    <h5 className="text-secondary mb-0">$130</h5>
-                    <Link
-                      to={all_routes.courseDetails}
-                      className="btn btn-dark btn-sm d-inline-flex align-items-center"
-                    >
-                      View Course
-                      <i className="isax isax-arrow-right-3 ms-1" />
-                    </Link>
                   </div>
                 </div>
               </div>
             </div>
-            <div className="col-xl-4 col-md-6">
-              <div className="course-item-two course-item mx-0">
-                <div className="course-img">
-                  <Link to={all_routes.courseDetails}>
-                    <ImageWithBasePath
-                      src="assets/img/course/course-06.jpg"
-                      alt="img"
-                      className="img-fluid"
-                    />
-                  </Link>
-                  <div className="position-absolute start-0 top-0 d-flex align-items-start w-100 z-index-2 p-3">
-                    <Link to="#" className="fav-icon ms-auto">
-                      <i className="isax isax-heart" />
-                    </Link>
+            <div className="col-lg-9">
+              {/* Filter */}
+              <div className="showing-list mb-4">
+                <div className="row align-items-center">
+                  <div className="col-lg-4">
+                    <div className="show-result text-center text-lg-start">
+                      <h6 className="fw-medium">
+                        Mostrando {page * filters.size + 1}-{Math.min((page + 1) * filters.size, courses.length)} de {courses.length} resultados
+                      </h6>
+                    </div>
+                  </div>
+                  <div className="col-lg-8">
+                    <div className="show-filter add-course-info">
+                      <form action="#">
+                        <div className="d-sm-flex justify-content-center justify-content-lg-end mb-1 mb-lg-0">
+                          <div className="view-icons mb-2 mb-sm-0">
+                            <Link to={all_routes.courseGrid} className="grid-view active">
+                              <i className="isax isax-element-3" />
+                            </Link>
+                            <Link to={all_routes.courseList} className="list-view">
+                              <i className="isax isax-task" />
+                            </Link>
+                          </div>
+                          <select className="form-select">
+                            <option>Recém Publicados</option>
+                            <option>Cursos em Tendência</option>
+                            <option>Mais Avaliados</option>
+                            <option>Cursos Gratuitos</option>
+                          </select>
+                          <div className=" search-group">
+                            <i className="isax isax-search-normal-1" />
+                            <input
+                              type="text"
+                              className="form-control"
+                              placeholder="Buscar"
+                            />
+                          </div>
+                        </div>
+                      </form>
+                    </div>
                   </div>
                 </div>
-                <div className="course-content">
-                  <div className="d-flex justify-content-between mb-2">
-                    <div className="d-flex align-items-center">
+              </div>
+              {/* /Filter */}
+              <div className="row">
+                {courses.map((course, index) => (
+                  <div className="col-xl-4 col-md-6" key={course.id ?? index}>
+                    <div className="course-item-two course-item mx-0">
+                      <div className="course-img">
+                        <Link to={`${all_routes.courseDetails}/${course.id}`}>
+                          <img
+                            src={course.thumbnailUrl}
+                            alt={course.title}
+                            className="img-fluid"
+                          />
+                        </Link>
+                        <div className="position-absolute start-0 top-0 d-flex align-items-start w-100 z-index-2 p-3">
+                          {course.price > 0 && (
+                            <div className="badge text-bg-danger">15% off</div>
+                          )}
+                          <Link 
+                            to="#" 
+                            className={`fav-icon ms-auto ${selectedItems[index] ? 'selected' : ''}`}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              handleItemClick(index);
+                            }}
+                          >
+                            <i className="isax isax-heart" />
+                          </Link>
+                        </div>
+                      </div>
+                      <div className="course-content">
+                        <div className="d-flex justify-content-between mb-2">
+                          <div className="d-flex align-items-center">
+                            <div className="avatar avatar-sm">
+                              <img
+                                src="./assets/img/user/user-29.jpg"
+                                alt={course.instructorName}
+                                className="img-fluid avatar avatar-sm rounded-circle"
+                              />
+                            </div>
+                            <div className="ms-2">
+                              <span className="link-default fs-14">
+                                {course.instructorName}
+                              </span>
+                            </div>
+                          </div>
+                          <span className="badge badge-light rounded-pill bg-light d-inline-flex align-items-center fs-13 fw-medium mb-0">
+                            {course.category?.name ?? "Sem Categoria"}
+                          </span>
+                        </div>
+                        <h6 className="title mb-2">
+                          <Link to={`${all_routes.courseDetails}/${course.id}`}>
+                            {course.title}
+                          </Link>
+                        </h6>
+                        <p className="d-flex align-items-center mb-3">
+                          <i className="fa-solid fa-star text-warning me-2" />
+                          {course.ratingText ?? "Sem avaliação"}
+                        </p>
+                        <div className="d-flex align-items-center justify-content-between">
+                          <h5 className="text-secondary mb-0">
+                            {course.price > 0 
+                              ? `MZN${course.price.toFixed(2)}` 
+                              : "Gratuito"}
+                          </h5>
+                          <button
+                            className="btn btn-dark btn-sm d-inline-flex align-items-center"
+                            onClick={(e: React.MouseEvent<HTMLButtonElement>) => handleAddToCart(e, course)}
+                          >
+                           Adicionar ao Carrinho
+                            <i className="isax isax-arrow-right-3 ms-1" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              
+              {/* Paginação */}
+              <div className="row align-items-center">
+                <div className="col-md-2">
+                  <p className="pagination-text">
+                    Página {page + 1} de {totalPages}
+                  </p>
+                </div>
+                <div className="col-md-10">
+                  <ul className="pagination lms-page justify-content-center justify-content-md-end mt-2 mt-md-0">
+                    <li
+                      className={`page-item prev ${
+                        page === 0 ? "disabled" : ""
+                      }`}
+                    >
                       <Link
-                        to={all_routes.instructorDetails}
-                        className="avatar avatar-sm"
+                        className="page-link"
+                        to="#"
+                        tabIndex={-1}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          goToPage(page - 1);
+                        }}
                       >
-                        <ImageWithBasePath
-                          src="assets/img/user/user-33.jpg"
-                          alt="img"
-                          className="img-fluid avatar avatar-sm rounded-circle"
-                        />
+                        <i className="fas fa-angle-left" />
                       </Link>
-                      <div className="ms-2">
-                        <Link
-                          to={all_routes.instructorDetails}
-                          className="link-default fs-14"
-                        >
-                          Carolyn Hines
-                        </Link>
-                      </div>
-                    </div>
-                    <span className="badge badge-light rounded-pill bg-light d-inline-flex align-items-center fs-13 fw-medium mb-0">
-                      Programming
-                    </span>
-                  </div>
-                  <h6 className="title mb-2">
-                    <Link to={all_routes.courseDetails}>
-                      Introduction to Python Programming
-                    </Link>
-                  </h6>
-                  <p className="d-flex align-items-center mb-3">
-                    <i className="fa-solid fa-star text-warning me-2" />
-                    4.4 (180 Reviews)
-                  </p>
-                  <div className="d-flex align-items-center justify-content-between">
-                    <h5 className="text-secondary mb-0">$130</h5>
-                    <Link
-                      to={all_routes.courseDetails}
-                      className="btn btn-dark btn-sm d-inline-flex align-items-center"
-                    >
-                      View Course
-                      <i className="isax isax-arrow-right-3 ms-1" />
-                    </Link>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="col-xl-4 col-md-6">
-              <div className="course-item-two course-item mx-0">
-                <div className="course-img">
-                  <Link to={all_routes.courseDetails}>
-                    <ImageWithBasePath
-                      src="assets/img/course/course-07.jpg"
-                      alt="img"
-                      className="img-fluid"
-                    />
-                  </Link>
-                  <div className="position-absolute start-0 top-0 d-flex align-items-start w-100 z-index-2 p-3">
-                    <Link to="#" className="fav-icon ms-auto">
-                      <i className="isax isax-heart" />
-                    </Link>
-                  </div>
-                </div>
-                <div className="course-content">
-                  <div className="d-flex justify-content-between mb-2">
-                    <div className="d-flex align-items-center">
-                      <Link
-                        to={all_routes.instructorDetails}
-                        className="avatar avatar-sm"
-                      >
-                        <ImageWithBasePath
-                          src="assets/img/user/user-34.jpg"
-                          alt="img"
-                          className="img-fluid avatar avatar-sm rounded-circle"
-                        />
-                      </Link>
-                      <div className="ms-2">
-                        <Link
-                          to={all_routes.instructorDetails}
-                          className="link-default fs-14"
-                        >
-                          Rafael Miller
-                        </Link>
-                      </div>
-                    </div>
-                    <span className="badge badge-light rounded-pill bg-light d-inline-flex align-items-center fs-13 fw-medium mb-0">
-                      Programming
-                    </span>
-                  </div>
-                  <h6 className="title mb-2">
-                    <Link to={all_routes.courseDetails}>
-                      Build Responsive Websites with HTML5 and CSS3
-                    </Link>
-                  </h6>
-                  <p className="d-flex align-items-center mb-3">
-                    <i className="fa-solid fa-star text-warning me-2" />
-                    4.4 (180 Reviews)
-                  </p>
-                  <div className="d-flex align-items-center justify-content-between">
-                    <h5 className="text-secondary mb-0">$170</h5>
-                    <Link
-                      to={all_routes.courseDetails}
-                      className="btn btn-dark btn-sm d-inline-flex align-items-center"
-                    >
-                      View Course
-                      <i className="isax isax-arrow-right-3 ms-1" />
-                    </Link>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="col-xl-4 col-md-6">
-              <div className="course-item-two course-item mx-0">
-                <div className="course-img">
-                  <Link to={all_routes.courseDetails}>
-                    <ImageWithBasePath
-                      src="assets/img/course/course-08.jpg"
-                      alt="img"
-                      className="img-fluid"
-                    />
-                  </Link>
-                  <div className="position-absolute start-0 top-0 d-flex align-items-start w-100 z-index-2 p-3">
-                    <Link to="#" className="fav-icon ms-auto">
-                      <i className="isax isax-heart" />
-                    </Link>
-                  </div>
-                </div>
-                <div className="course-content">
-                  <div className="d-flex justify-content-between mb-2">
-                    <div className="d-flex align-items-center">
-                      <Link
-                        to={all_routes.instructorDetails}
-                        className="avatar avatar-sm"
-                      >
-                        <ImageWithBasePath
-                          src="assets/img/user/user-35.jpg"
-                          alt="img"
-                          className="img-fluid avatar avatar-sm rounded-circle"
-                        />
-                      </Link>
-                      <div className="ms-2">
-                        <Link
-                          to={all_routes.instructorDetails}
-                          className="link-default fs-14"
-                        >
-                          Nancy Duarte
-                        </Link>
-                      </div>
-                    </div>
-                    <span className="badge badge-light rounded-pill bg-light d-inline-flex align-items-center fs-13 fw-medium mb-0">
-                      Design
-                    </span>
-                  </div>
-                  <h6 className="title mb-2">
-                    <Link to={all_routes.courseDetails}>
-                      Information About Photoshop Design Degree
-                    </Link>
-                  </h6>
-                  <p className="d-flex align-items-center mb-3">
-                    <i className="fa-solid fa-star text-warning me-2" />
-                    4.4 (180 Reviews)
-                  </p>
-                  <div className="d-flex align-items-center justify-content-between">
-                    <h5 className="text-secondary mb-0">$170</h5>
-                    <Link
-                      to={all_routes.courseDetails}
-                      className="btn btn-dark btn-sm d-inline-flex align-items-center"
-                    >
-                      View Course
-                      <i className="isax isax-arrow-right-3 ms-1" />
-                    </Link>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="col-xl-4 col-md-6">
-              <div className="course-item-two course-item mx-0">
-                <div className="course-img">
-                  <Link to={all_routes.courseDetails}>
-                    <ImageWithBasePath
-                      src="assets/img/course/course-09.jpg"
-                      alt="img"
-                      className="img-fluid"
-                    />
-                  </Link>
-                  <div className="position-absolute start-0 top-0 d-flex align-items-start w-100 z-index-2 p-3">
-                    <Link to="#" className="fav-icon ms-auto">
-                      <i className="isax isax-heart" />
-                    </Link>
-                  </div>
-                </div>
-                <div className="course-content">
-                  <div className="d-flex justify-content-between mb-2">
-                    <div className="d-flex align-items-center">
-                      <Link
-                        to={all_routes.instructorDetails}
-                        className="avatar avatar-sm"
-                      >
-                        <ImageWithBasePath
-                          src="assets/img/user/user-36.jpg"
-                          alt="img"
-                          className="img-fluid avatar avatar-sm rounded-circle"
-                        />
-                      </Link>
-                      <div className="ms-2">
-                        <Link
-                          to={all_routes.instructorDetails}
-                          className="link-default fs-14"
-                        >
-                          James Kagan
-                        </Link>
-                      </div>
-                    </div>
-                    <span className="badge badge-light rounded-pill bg-light d-inline-flex align-items-center fs-13 fw-medium mb-0">
-                      Design
-                    </span>
-                  </div>
-                  <h6 className="title mb-2">
-                    <Link to={all_routes.courseDetails}>
-                      C# Developers Double Your Coding with Visual Studio
-                    </Link>
-                  </h6>
-                  <p className="d-flex align-items-center mb-3">
-                    <i className="fa-solid fa-star text-warning me-2" />
-                    4.4 (180 Reviews)
-                  </p>
-                  <div className="d-flex align-items-center justify-content-between">
-                    <h5 className="text-secondary mb-0">$180</h5>
-                    <Link
-                      to={all_routes.courseDetails}
-                      className="btn btn-dark btn-sm d-inline-flex align-items-center"
-                    >
-                      View Course
-                      <i className="isax isax-arrow-right-3 ms-1" />
-                    </Link>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          {/* /pagination */}
-          <div className="row align-items-center">
-            <div className="col-md-2">
-              <p className="pagination-text">Page 1 of 2</p>
-            </div>
-            <div className="col-md-10">
-              <ul className="pagination lms-page justify-content-center justify-content-md-end mt-2 mt-md-0">
-                <li className="page-item prev">
-                  <Link
-                    className="page-link"
-                    to="#"
-                    tabIndex={-1}
-                  >
-                    <i className="fas fa-angle-left" />
-                  </Link>
-                </li>
-                <li className="page-item first-page active">
-                  <Link className="page-link" to="#">
-                    1
-                  </Link>
-                </li>
-                <li className="page-item">
-                  <Link className="page-link" to="#">
-                    2
-                  </Link>
-                </li>
-                <li className="page-item">
-                  <Link className="page-link" to="#">
-                    3
-                  </Link>
-                </li>
-                <li className="page-item next">
-                  <Link className="page-link" to="#">
-                    <i className="fas fa-angle-right" />
-                  </Link>
-                </li>
-              </ul>
-            </div>
-          </div>
-          {/* /pagination */}
-        </div>
-      </div>
-    </div>
-  </section>
-  {/* /Course */}
-</>
+                    </li>
 
-  )
+                    {[...Array(totalPages)].map((_, i) => (
+                      <li
+                        key={i}
+                        className={`page-item ${
+                          page === i ? "active first-page" : ""
+                        }`}
+                      >
+                        <Link
+                          className="page-link"
+                          to="#"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            goToPage(i);
+                          }}
+                        >
+                          {i + 1}
+                        </Link>
+                      </li>
+                    ))}
+
+                    <li
+                      className={`page-item next ${
+                        page === totalPages - 1 ? "disabled" : ""
+                      }`}
+                    >
+                      <Link
+                        className="page-link"
+                        to="#"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          goToPage(page + 1);
+                        }}
+                      >
+                        <i className="fas fa-angle-right" />
+                      </Link>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+              {/* /Paginação */}
+            </div>
+          </div>
+        </div>
+      </section>
+      {/* /Course */}
+    </>
+  );
 }
 
-export default CourseGrid
+export default CourseGrid;
