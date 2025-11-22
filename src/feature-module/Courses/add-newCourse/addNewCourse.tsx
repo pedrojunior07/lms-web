@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import Breadcrumb from "../../../core/common/Breadcrumb/breadcrumb";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import CustomSelect from "../../../core/common/commonSelect";
 
 import {
@@ -22,6 +22,10 @@ import { useLocalUploader } from "../../../core/api/hooks/useLocalUploader";
 import { Module } from "../../../core/common/data/interface";
 
 const AddNewCourse = () => {
+  const [searchParams] = useSearchParams();
+  const editCourseId = searchParams.get("id");
+  const isEditMode = !!editCourseId;
+
   const {
     uploadVideo,
     uploadThumbnail,
@@ -192,6 +196,8 @@ const AddNewCourse = () => {
     saveMedia,
     saveCurriculum,
     savePricing,
+    getCourceById,
+    getCourseCards,
   } = useCourseApi();
 
   useEffect(() => {
@@ -207,8 +213,63 @@ const AddNewCourse = () => {
       }
     };
 
+    const loadCourseData = async () => {
+      if (!editCourseId) return;
+
+      try {
+        setIsLoading(true);
+        const courseResponse = await getCourceById(Number(editCourseId));
+        const course = courseResponse.data;
+
+        // Preencher campos básicos
+        setTitle(course.title || "");
+        setCategoryId(course.category?.id || null);
+        setCategory(course.category?.name || "");
+        setLevel(course.level || "");
+        setLanguage(course.language || "");
+        setMaxStudents(course.maxStudents?.toString() || "");
+        setPublicOrPrivate(course.publicOrPrivate || "");
+        setShortDescription(course.shortDescription || "");
+        setLongDescription(course.longDescription || "");
+        setItems(course.whatStudentsWillLearn || []);
+        setRequirements(course.requirements || []);
+        setintroVideo(course.introVideoUrl || "");
+        setVideoProvider(course.videoProvider || "local");
+        setThumbnailPath(course.thumbnailPath || "");
+
+        // Preencher preços
+        setIsFree(course.isFree || false);
+        setPrice(course.price?.toString() || "");
+        setHasDiscount(course.hasDiscount || false);
+        setDiscountPrice(course.discountPrice?.toString() || "");
+        setExpiryType(course.expiryType || "LIFETIME");
+        setExpiryMonths(course.expiryMonths?.toString() || "");
+
+        // Carregar módulos/currículo
+        const modulesResponse = await getCourseCards(editCourseId);
+        if (modulesResponse.data && modulesResponse.data.length > 0) {
+          setCurriculum(modulesResponse.data.map((mod: any) => ({
+            title: mod.title,
+            description: mod.description || "",
+            lessons: mod.lessons.map((lesson: any) => ({
+              title: lesson.title,
+              content: lesson.content || ""
+            }))
+          })));
+        }
+
+        setCourseId(Number(editCourseId) as any);
+      } catch (error: any) {
+        console.error("Erro ao carregar curso:", error);
+        toast.error("Erro ao carregar dados do curso");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
     fetchCategories();
-  }, []);
+    loadCourseData();
+  }, [editCourseId]);
 
   const validateStep1 = () => {
     setShow(false);
@@ -389,7 +450,7 @@ const AddNewCourse = () => {
 
   return (
     <>
-      <Breadcrumb title="Add New Course" />
+      <Breadcrumb title={isEditMode ? "Editar Curso" : "Adicionar Novo Curso"} />
 
       <div className="content">
         <div className="container">

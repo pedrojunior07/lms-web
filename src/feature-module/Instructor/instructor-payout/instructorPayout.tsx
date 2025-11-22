@@ -1,167 +1,211 @@
 import React, { useEffect, useState } from "react";
-import Breadcrumb from "../../../core/common/Breadcrumb/breadcrumb";
 import InstructorSidebar from "../common/instructorSidebar";
 import ProfileCard from "../common/profileCard";
 import ImageWithBasePath from "../../../core/common/imageWithBasePath";
 import { Link } from "react-router-dom";
 import Table from "../../../core/common/dataTable/index";
-import { PayoutData } from "../../../core/common/data/json/payoutData";
 import DashboardHeader from "../instructor-dashboard/DashboardHeader";
-import { useCourseApi } from "../../../core/api/hooks/useCourseApi";
-import { formatDate } from "../../../utils/formatDate"; // ajuste o caminho conforme necessário
-import { title } from "process";
-import { text } from "stream/consumers";
+import { usePaymentWallets, WalletType, CreateWalletDto } from "../../../core/api/hooks/usePaymentWallets";
+import { useCourseOrders, OrderStatus } from "../../../core/api/hooks/useCourseOrders";
+import { formatDate } from "../../../utils/formatDate";
 
-interface PayoutRecord {
-  id: string;
-  date: string;
-  amount: string;
-  paymentMethod: string;
-  status: "Paid" | "Pending" | "Cancelled";
-}
 const InstructorPayout = () => {
-  const data = PayoutData;
+  const instructorId = Number(localStorage.getItem("id"));
+
+  const { wallets, loading: loadingWallets, fetchWallets, createWallet, updateWallet, deleteWallet } = usePaymentWallets();
+  const { orders, loading: loadingOrders, fetchInstructorOrders, approveOrder, rejectOrder } = useCourseOrders();
+
+  const [showWalletModal, setShowWalletModal] = useState(false);
+  const [editingWallet, setEditingWallet] = useState<number | null>(null);
+  const [walletForm, setWalletForm] = useState<CreateWalletDto>({
+    walletType: "MPESA",
+    accountName: "",
+    accountNumber: "",
+    bankName: "",
+    active: true,
+  });
+
+  const [viewProofModal, setViewProofModal] = useState<{ url: string; show: boolean }>({ url: "", show: false });
+  const [rejectModal, setRejectModal] = useState<{ orderId: number; show: boolean }>({ orderId: 0, show: false });
+  const [rejectReason, setRejectReason] = useState("");
+
+  useEffect(() => {
+    if (instructorId) {
+      fetchWallets(instructorId);
+      fetchInstructorOrders(instructorId);
+    }
+  }, [instructorId, fetchWallets, fetchInstructorOrders]);
+
+  // Wallet handlers
+  const handleSaveWallet = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      if (editingWallet) {
+        await updateWallet(editingWallet, walletForm);
+      } else {
+        await createWallet(instructorId, walletForm);
+      }
+      setShowWalletModal(false);
+      resetWalletForm();
+    } catch (err) {
+      console.error("Erro ao salvar carteira:", err);
+    }
+  };
+
+  const handleEditWallet = (wallet: any) => {
+    setEditingWallet(wallet.id);
+    setWalletForm({
+      walletType: wallet.walletType,
+      accountName: wallet.accountName,
+      accountNumber: wallet.accountNumber,
+      bankName: wallet.bankName || "",
+      active: wallet.active,
+    });
+    setShowWalletModal(true);
+  };
+
+  const handleDeleteWallet = async (walletId: number) => {
+    if (window.confirm("Tem certeza que deseja remover esta carteira?")) {
+      try {
+        await deleteWallet(walletId);
+      } catch (err) {
+        console.error("Erro ao remover carteira:", err);
+      }
+    }
+  };
+
+  const resetWalletForm = () => {
+    setEditingWallet(null);
+    setWalletForm({
+      walletType: "MPESA",
+      accountName: "",
+      accountNumber: "",
+      bankName: "",
+      active: true,
+    });
+  };
+
+  // Order handlers
+  const handleApprove = async (orderId: number) => {
+    if (window.confirm("Confirmar aprovacao? O aluno sera inscrito no curso.")) {
+      try {
+        await approveOrder(orderId);
+        alert("Pedido aprovado com sucesso!");
+      } catch (err) {
+        console.error("Erro ao aprovar:", err);
+      }
+    }
+  };
+
+  const handleReject = async () => {
+    try {
+      await rejectOrder(rejectModal.orderId, rejectReason);
+      setRejectModal({ orderId: 0, show: false });
+      setRejectReason("");
+    } catch (err) {
+      console.error("Erro ao rejeitar:", err);
+    }
+  };
+
+  const getWalletTypeLabel = (type: WalletType) => {
+    switch (type) {
+      case "MPESA": return "M-Pesa";
+      case "EMOLA": return "E-Mola";
+      case "BANK": return "Banco";
+      default: return type;
+    }
+  };
+
+  const getStatusBadge = (status: OrderStatus) => {
+    switch (status) {
+      case "PENDING":
+        return <span className="badge bg-warning">Pendente</span>;
+      case "PROOF_UPLOADED":
+        return <span className="badge bg-info">Comprovativo Enviado</span>;
+      case "APPROVED":
+        return <span className="badge bg-success">Aprovado</span>;
+      case "REJECTED":
+        return <span className="badge bg-danger">Rejeitado</span>;
+      default:
+        return <span className="badge bg-secondary">{status}</span>;
+    }
+  };
+
+  // Calculate earnings
+  const totalEarnings = orders
+    .filter(o => o.status === "APPROVED")
+    .reduce((sum, o) => sum + (o.amount || 0), 0);
+
+  const pendingOrders = orders.filter(o => o.status === "PROOF_UPLOADED");
+
   const columns = [
     {
-      title: "ID",
-      dataIndex: "id",
-      render: (text: string) => (
-        <Link to="#" className="text-primary">
-          {text}
-        </Link>
-      ),
-      sorter: (a: any, b: any) => a.ID.length - b.ID.length,
-    },
-    {
-      title: "Date",
-      dataIndex: "dataCompra",
-      render: (text: string) => formatDate(text),
-      sorter: (a: any, b: any) =>
-        new Date(a.Date).getTime() - new Date(b.Date).getTime(),
-    },
-    {
-      title: "Amount",
-      dataIndex: "amount",
-      sorter: (a: any, b: any) => a.Amount.length - b.Amount.length,
-    },
-    {
-      title: "Payment Method",
-      dataIndex: "metodoPagamento",
-      sorter: (text: string) => <div>{text}</div>,
-    },
-    ,
-    {
       title: "Aluno",
-      dataIndex: "nomeEstudante",
-      sorter: (text: string) => <div>{text}</div>,
+      dataIndex: "studentName",
     },
     {
-      title: "Status",
-      dataIndex: "Status",
+      title: "Curso",
+      dataIndex: "courseTitle",
       render: (text: string) => (
-        <span
-          className={`badge badge-sm ${
-            text === "Paid"
-              ? "bg-success"
-              : text === "Pending"
-              ? "bg-info"
-              : "bg-danger"
-          } bg-success d-inline-flex align-items-center`}
-        >
-          <i className="fa-solid fa-circle fs-5 me-1" />
+        <span className="text-truncate d-inline-block" style={{ maxWidth: 150 }}>
           {text}
         </span>
       ),
-      sorter: (a: any, b: any) => a.Status.length - b.Status.length,
+    },
+    {
+      title: "Valor",
+      dataIndex: "amount",
+      render: (value: number) => `${value?.toFixed(2)} MT`,
+    },
+    {
+      title: "Metodo",
+      dataIndex: "paymentMethod",
+      render: (text: string) => getWalletTypeLabel(text as WalletType),
+    },
+    {
+      title: "Data",
+      dataIndex: "orderDate",
+      render: (text: string) => new Date(text).toLocaleDateString(),
+    },
+    {
+      title: "Status",
+      dataIndex: "status",
+      render: (text: OrderStatus) => getStatusBadge(text),
+    },
+    {
+      title: "Acoes",
+      dataIndex: "id",
+      render: (_: any, record: any) => (
+        <div className="d-flex gap-1">
+          {record.status === "PROOF_UPLOADED" && (
+            <>
+              <button
+                className="btn btn-sm btn-outline-info"
+                onClick={() => setViewProofModal({ url: record.proofOfPaymentUrl || "", show: true })}
+                title="Ver Comprovativo"
+              >
+                <i className="fa fa-eye"></i>
+              </button>
+              <button
+                className="btn btn-sm btn-success"
+                onClick={() => handleApprove(record.id)}
+                title="Aprovar"
+              >
+                <i className="fa fa-check"></i>
+              </button>
+              <button
+                className="btn btn-sm btn-danger"
+                onClick={() => setRejectModal({ orderId: record.id, show: true })}
+                title="Rejeitar"
+              >
+                <i className="fa fa-times"></i>
+              </button>
+            </>
+          )}
+        </div>
+      ),
     },
   ];
-  const [payouts, setPayouts] = useState<PayoutRecord[]>([]);
-  const [filteredPayouts, setFilteredPayouts] = useState<PayoutRecord[]>([]);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [paymentMethodFilter, setPaymentMethodFilter] = useState<string>("all");
-  const [showStatusDropdown, setShowStatusDropdown] = useState(false);
-  const [showPaymentDropdown, setShowPaymentDropdown] = useState(false);
-  const { listPayments } = useCourseApi();
-  useEffect(() => {
-    // Simulate API call - replace with actual API integration
-    const fetchPayouts = async () => {
-      try {
-        const response = await listPayments();
-        // const data = await response.json()
-        console.log("!!!!!!!", response);
-        setPayouts(response);
-        setFilteredPayouts(response);
-      } catch (error) {
-        console.error("Error fetching payouts:", error);
-      }
-    };
-
-    fetchPayouts();
-  }, []);
-
-  useEffect(() => {
-    let filtered = payouts;
-
-    if (searchTerm) {
-      filtered = filtered.filter(
-        (payout) =>
-          payout.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          payout.amount.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-
-    if (statusFilter !== "all") {
-      filtered = filtered.filter(
-        (payout) => payout.status.toLowerCase() === statusFilter
-      );
-    }
-
-    if (paymentMethodFilter !== "all") {
-      filtered = filtered.filter((payout) =>
-        payout.paymentMethod
-          .toLowerCase()
-          .includes(paymentMethodFilter.toLowerCase())
-      );
-    }
-
-    setFilteredPayouts(filtered);
-  }, [payouts, searchTerm, statusFilter, paymentMethodFilter]);
-
-  const getStatusBadge = (status: string) => {
-    const baseClasses =
-      "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium";
-
-    switch (status) {
-      case "Paid":
-        return (
-          <span className={`${baseClasses} bg-green-100 text-green-800`}>
-            <span className="w-1.5 h-1.5 bg-green-400 rounded-full mr-1.5"></span>
-            Paid
-          </span>
-        );
-      case "Pending":
-        return (
-          <span className={`${baseClasses} bg-blue-100 text-blue-800`}>
-            <span className="w-1.5 h-1.5 bg-blue-400 rounded-full mr-1.5"></span>
-            Pending
-          </span>
-        );
-      case "Cancelled":
-        return (
-          <span className={`${baseClasses} bg-red-100 text-red-800`}>
-            <span className="w-1.5 h-1.5 bg-red-400 rounded-full mr-1.5"></span>
-            Cancelled
-          </span>
-        );
-      default:
-        return (
-          <span className={`${baseClasses} bg-gray-100 text-gray-800`}>
-            {status}
-          </span>
-        );
-    }
-  };
 
   return (
     <>
@@ -173,267 +217,274 @@ const InstructorPayout = () => {
 
           <div className="dashboard-main p-4 ms-260 w-100">
             <ProfileCard />
-            <div className="col-lg-9">
+            <div className="col-lg-12">
               <div className="payouts">
-                <div className="alert alert-warning alert-dismissible d-flex fade show mb-4">
-                  <i className="isax isax-information4 flex-shrink-0 me-2" />
-                  Your selected payout method was confirmed on Next Payout on 15
-                  Jan, 2025 for "payout@example.com"
-                  <button
-                    type="button"
-                    className="btn-close"
-                    data-bs-dismiss="alert"
-                    aria-label="Close"
-                  >
-                    <i className="isax isax-close-circle5" />
+                {/* Summary Cards */}
+                <div className="row mb-4">
+                  <div className="col-xl-4">
+                    <div className="card bg-success text-white">
+                      <div className="card-body">
+                        <h6 className="text-white-50">Ganhos Totais</h6>
+                        <h3 className="text-white">{totalEarnings.toFixed(2)} MT</h3>
+                        <small>{orders.filter(o => o.status === "APPROVED").length} pedidos aprovados</small>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="col-xl-4">
+                    <div className="card bg-warning text-dark">
+                      <div className="card-body">
+                        <h6>Aguardando Validacao</h6>
+                        <h3>{pendingOrders.length}</h3>
+                        <small>pedidos com comprovativo</small>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="col-xl-4">
+                    <div className="card bg-primary text-white">
+                      <div className="card-body">
+                        <h6 className="text-white-50">Carteiras Ativas</h6>
+                        <h3 className="text-white">{wallets.filter(w => w.active).length}</h3>
+                        <small>metodos de pagamento</small>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Payment Methods Section */}
+                <div className="card mb-4">
+                  <div className="card-header d-flex justify-content-between align-items-center">
+                    <h5 className="mb-0">
+                      <i className="fa fa-wallet me-2"></i>
+                      Metodos de Pagamento
+                    </h5>
+                    <button
+                      className="btn btn-primary btn-sm"
+                      onClick={() => {
+                        resetWalletForm();
+                        setShowWalletModal(true);
+                      }}
+                    >
+                      <i className="fa fa-plus me-1"></i>
+                      Adicionar
+                    </button>
+                  </div>
+                  <div className="card-body">
+                    {loadingWallets ? (
+                      <div className="text-center py-3">
+                        <div className="spinner-border spinner-border-sm text-primary"></div>
+                      </div>
+                    ) : wallets.length === 0 ? (
+                      <p className="text-muted text-center mb-0">
+                        Nenhuma carteira cadastrada. Adicione para receber pagamentos.
+                      </p>
+                    ) : (
+                      <div className="row">
+                        {wallets.map((wallet) => (
+                          <div key={wallet.id} className="col-md-4 mb-3">
+                            <div className={`card h-100 ${!wallet.active ? "opacity-50" : ""}`}>
+                              <div className="card-body">
+                                <div className="d-flex justify-content-between align-items-start mb-2">
+                                  <span className={`badge ${
+                                    wallet.walletType === "MPESA" ? "bg-danger" :
+                                    wallet.walletType === "EMOLA" ? "bg-warning" : "bg-info"
+                                  }`}>
+                                    {getWalletTypeLabel(wallet.walletType)}
+                                  </span>
+                                  <div>
+                                    <button
+                                      className="btn btn-sm btn-link p-0 me-2"
+                                      onClick={() => handleEditWallet(wallet)}
+                                    >
+                                      <i className="fa fa-edit"></i>
+                                    </button>
+                                    <button
+                                      className="btn btn-sm btn-link text-danger p-0"
+                                      onClick={() => handleDeleteWallet(wallet.id)}
+                                    >
+                                      <i className="fa fa-trash"></i>
+                                    </button>
+                                  </div>
+                                </div>
+                                <h6 className="mb-1">{wallet.accountName}</h6>
+                                <p className="mb-0 text-muted">{wallet.accountNumber}</p>
+                                {wallet.bankName && (
+                                  <small className="text-muted">{wallet.bankName}</small>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Orders Table */}
+                <div className="card">
+                  <div className="card-header">
+                    <h5 className="mb-0">
+                      <i className="fa fa-list me-2"></i>
+                      Pedidos de Inscricao
+                    </h5>
+                  </div>
+                  <div className="card-body">
+                    {loadingOrders ? (
+                      <div className="text-center py-5">
+                        <div className="spinner-border text-primary"></div>
+                      </div>
+                    ) : orders.length === 0 ? (
+                      <p className="text-muted text-center mb-0">Nenhum pedido encontrado</p>
+                    ) : (
+                      <Table dataSource={orders} columns={columns} Search={true} />
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Wallet Modal */}
+      {showWalletModal && (
+        <div className="modal fade show d-block" style={{ backgroundColor: "rgba(0,0,0,0.5)" }}>
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">
+                  {editingWallet ? "Editar Carteira" : "Nova Carteira"}
+                </h5>
+                <button type="button" className="btn-close" onClick={() => setShowWalletModal(false)}></button>
+              </div>
+              <form onSubmit={handleSaveWallet}>
+                <div className="modal-body">
+                  <div className="mb-3">
+                    <label className="form-label">Tipo</label>
+                    <select
+                      className="form-select"
+                      value={walletForm.walletType}
+                      onChange={(e) => setWalletForm({ ...walletForm, walletType: e.target.value as WalletType })}
+                      required
+                    >
+                      <option value="MPESA">M-Pesa</option>
+                      <option value="EMOLA">E-Mola</option>
+                      <option value="BANK">Banco</option>
+                    </select>
+                  </div>
+                  <div className="mb-3">
+                    <label className="form-label">Nome da Conta</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      value={walletForm.accountName}
+                      onChange={(e) => setWalletForm({ ...walletForm, accountName: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <div className="mb-3">
+                    <label className="form-label">
+                      {walletForm.walletType === "BANK" ? "Numero da Conta" : "Numero de Telefone"}
+                    </label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      value={walletForm.accountNumber}
+                      onChange={(e) => setWalletForm({ ...walletForm, accountNumber: e.target.value })}
+                      required
+                    />
+                  </div>
+                  {walletForm.walletType === "BANK" && (
+                    <div className="mb-3">
+                      <label className="form-label">Nome do Banco</label>
+                      <input
+                        type="text"
+                        className="form-control"
+                        value={walletForm.bankName}
+                        onChange={(e) => setWalletForm({ ...walletForm, bankName: e.target.value })}
+                      />
+                    </div>
+                  )}
+                  <div className="form-check">
+                    <input
+                      type="checkbox"
+                      className="form-check-input"
+                      id="walletActive"
+                      checked={walletForm.active}
+                      onChange={(e) => setWalletForm({ ...walletForm, active: e.target.checked })}
+                    />
+                    <label className="form-check-label" htmlFor="walletActive">Ativa</label>
+                  </div>
+                </div>
+                <div className="modal-footer">
+                  <button type="button" className="btn btn-secondary" onClick={() => setShowWalletModal(false)}>
+                    Cancelar
+                  </button>
+                  <button type="submit" className="btn btn-primary" disabled={loadingWallets}>
+                    Salvar
                   </button>
                 </div>
-                <div className="row mb-4">
-                  <div className="col-xl-5">
-                    <div className="earning-this-month border">
-                      <ImageWithBasePath
-                        src="./assets/img/shapes/withdraw-bg1.svg"
-                        className="earning-bg1"
-                        alt="img"
-                      />
-                      <ImageWithBasePath
-                        src="./assets/img/shapes/withdraw-bg2.svg"
-                        className="earning-bg2"
-                        alt="img"
-                      />
-                      <div className="flex-shrink-0 earn-img">
-                        <ImageWithBasePath
-                          className="img-fluid"
-                          src="./assets/img/icons/icon-2.svg"
-                          alt="img"
-                        />
-                      </div>
-                      <div className="ps-3">
-                        <h6 className="mb-2">Earning this month</h6>
-                        <h5>$8,420</h5>
-                        <p>Update your payout in settings</p>
-                      </div>
-                      <Link
-                        to="#"
-                        className="btn btn-dark"
-                        data-bs-toggle="modal"
-                        data-bs-target="#withdraw-req"
-                      >
-                        Withdraw
-                      </Link>
-                    </div>
-                  </div>
-                  <div className="col-xl-7">
-                    <h6 className="mb-3">Select Payment Gateway for Payout</h6>
-                    <div className="payment-method">
-                      <div className="row g-3">
-                        <div className="col-lg-6">
-                          <div>
-                            <input
-                              type="radio"
-                              className="btn-check"
-                              name="btnradio"
-                              id="btnradio1"
-                              defaultChecked
-                            />
-                            <label
-                              className="btn bg-white btn-check-label w-100 d-flex justify-content-between align-items-center"
-                              htmlFor="btnradio1"
-                            >
-                              <span className="d-flex align-items-center">
-                                <span className="check-outer me-2">
-                                  <i />
-                                </span>
-                                <ImageWithBasePath
-                                  src="assets/img/icons/paypal.svg"
-                                  alt="img"
-                                />
-                              </span>
-                            </label>
-                          </div>
-                        </div>
-                        <div className="col-lg-6">
-                          <div>
-                            <input
-                              type="radio"
-                              className="btn-check"
-                              name="btnradio"
-                              id="btnradio2"
-                            />
-                            <label
-                              className="btn btn-check-label bg-white w-100 d-flex justify-content-between align-items-center"
-                              htmlFor="btnradio2"
-                            >
-                              <span className="d-flex align-items-center fs-16 fw-medium">
-                                <span className="check-outer me-2">
-                                  <i />
-                                </span>
-                                Bank Transfer
-                              </span>
-                            </label>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <h5 className="page-title">Payouts</h5>
-                <div className="table-top">
-                  <div className="row align-items-center">
-                    <div className="col-md-8">
-                      <div className="d-flex align-items-center">
-                        <div className="mb-3">
-                          <div className="dropdown me-3">
-                            <Link
-                              to="#"
-                              className="dropdown-toggle btn d-inline-flex align-items-center"
-                              data-bs-toggle="dropdown"
-                              aria-expanded="false"
-                            >
-                              Payment Method
-                            </Link>
-                            <ul className="dropdown-menu dropdown-menu-end">
-                              <li>
-                                <Link
-                                  to="#"
-                                  className="dropdown-item rounded-1"
-                                >
-                                  Paypal
-                                </Link>
-                              </li>
-                              <li>
-                                <Link
-                                  to="#"
-                                  className="dropdown-item rounded-1"
-                                >
-                                  Bank Transfer
-                                </Link>
-                              </li>
-                              <li>
-                                <Link
-                                  to="#"
-                                  className="dropdown-item rounded-1"
-                                >
-                                  Stripe
-                                </Link>
-                              </li>
-                            </ul>
-                          </div>
-                        </div>
-                        <div className="mb-3">
-                          <div className="dropdown me-3">
-                            <Link
-                              to="#"
-                              className="dropdown-toggle btn d-inline-flex align-items-center"
-                              data-bs-toggle="dropdown"
-                              aria-expanded="false"
-                            >
-                              Status
-                            </Link>
-                            <ul className="dropdown-menu dropdown-menu-end">
-                              <li>
-                                <Link
-                                  to="#"
-                                  className="dropdown-item rounded-1"
-                                >
-                                  Paid
-                                </Link>
-                              </li>
-                              <li>
-                                <Link
-                                  to="#"
-                                  className="dropdown-item rounded-1"
-                                >
-                                  Pending
-                                </Link>
-                              </li>
-                              <li>
-                                <Link
-                                  to="#"
-                                  className="dropdown-item rounded-1"
-                                >
-                                  Cancel
-                                </Link>
-                              </li>
-                            </ul>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="col-md-4"></div>
-                  </div>
-                </div>
-                <Table dataSource={payouts} columns={columns} Search={true} />
-              </div>
+              </form>
             </div>
           </div>
         </div>
-      </div>
-      <div className="modal fade" id="withdraw-req">
-        <div className="modal-dialog modal-dialog-centered modal-md">
-          <div className="modal-content">
-            <div className="modal-header">
-              <h5 className="fw-bold">Withdrawal Request</h5>
-              <button
-                type="button"
-                className="btn-close custom-btn-close"
-                data-bs-dismiss="modal"
-                aria-label="Close"
-              >
-                <i className="isax isax-close-circle5" />
-              </button>
-            </div>
-            <form>
-              <div className="modal-body pb-0">
-                <div className="card mb-3">
-                  <div className="card-body">
-                    <div className="row">
-                      <div className="col-6">
-                        <p className="mb-2">Withdrawal Balance</p>
-                        <h6 className="fs-16">$5340</h6>
-                      </div>
-                      <div className="col-6">
-                        <p className="mb-2">Selected</p>
-                        <h6 className="fs-16">PayPal</h6>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="mb-3">
-                  <label className="form-label">
-                    Amount<span className="text-danger ms-1">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    defaultValue="$ "
-                  />
-                  <p className="form-info">
-                    <i className="isax isax-info-circle" />
-                    Minimum withdraw amount is $50
-                  </p>
-                </div>
+      )}
+
+      {/* View Proof Modal */}
+      {viewProofModal.show && (
+        <div className="modal fade show d-block" style={{ backgroundColor: "rgba(0,0,0,0.5)" }}>
+          <div className="modal-dialog modal-lg modal-dialog-centered">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">Comprovativo de Pagamento</h5>
+                <button type="button" className="btn-close" onClick={() => setViewProofModal({ url: "", show: false })}></button>
+              </div>
+              <div className="modal-body text-center">
+                <img src={viewProofModal.url} alt="Comprovativo" style={{ maxWidth: "100%", maxHeight: "70vh" }} />
               </div>
               <div className="modal-footer">
-                <button
-                  className="btn bg-gray-100 rounded-pill me-2"
-                  type="button"
-                  data-bs-dismiss="modal"
-                >
-                  Cancel
-                </button>
-                <button
-                  className="btn btn-secondary rounded-pill"
-                  type="button"
-                  data-bs-dismiss="modal"
-                >
-                  Submit
+                <a href={viewProofModal.url} target="_blank" rel="noopener noreferrer" className="btn btn-primary">
+                  Abrir em Nova Aba
+                </a>
+                <button type="button" className="btn btn-secondary" onClick={() => setViewProofModal({ url: "", show: false })}>
+                  Fechar
                 </button>
               </div>
-            </form>
+            </div>
           </div>
         </div>
-      </div>
+      )}
+
+      {/* Reject Modal */}
+      {rejectModal.show && (
+        <div className="modal fade show d-block" style={{ backgroundColor: "rgba(0,0,0,0.5)" }}>
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">Rejeitar Pedido</h5>
+                <button type="button" className="btn-close" onClick={() => setRejectModal({ orderId: 0, show: false })}></button>
+              </div>
+              <div className="modal-body">
+                <label className="form-label">Motivo</label>
+                <textarea
+                  className="form-control"
+                  rows={3}
+                  value={rejectReason}
+                  onChange={(e) => setRejectReason(e.target.value)}
+                  placeholder="Informe o motivo..."
+                />
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-secondary" onClick={() => setRejectModal({ orderId: 0, show: false })}>
+                  Cancelar
+                </button>
+                <button type="button" className="btn btn-danger" onClick={handleReject} disabled={loadingOrders}>
+                  Rejeitar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };

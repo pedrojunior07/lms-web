@@ -2,6 +2,7 @@
 
 import type React from "react";
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import "./register.css";
 import axios from "axios";
 import { toast } from "react-toastify";
@@ -26,6 +27,7 @@ interface RegisterData {
 }
 
 const EcoRegister: React.FC<EcoRegisterProps> = ({ onRegister }) => {
+  const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -190,7 +192,7 @@ const EcoRegister: React.FC<EcoRegisterProps> = ({ onRegister }) => {
     setLoading(true);
     try {
       const response = await axios.post(
-        "http://192.250.224.214:8585/e-learning/api/auth/register",
+        "http://localhost:8085/e-learning/api/auth/register",
         {
           role: formData.role,
           firstName: formData.firstName,
@@ -204,7 +206,7 @@ const EcoRegister: React.FC<EcoRegisterProps> = ({ onRegister }) => {
         }
       );
 
-      toast.success("Registro realizado com sucesso! 🌱", {
+      toast.success("Registro realizado! Verifique seu e-mail para ativar sua conta.", {
         toastId: "success-register",
         icon: (
           <svg
@@ -220,6 +222,7 @@ const EcoRegister: React.FC<EcoRegisterProps> = ({ onRegister }) => {
         ),
         className: "custom-toast",
         progressClassName: "custom-toast-progress",
+        autoClose: 5000,
       });
       setShowSuccessModal(true);
     } catch (error: any) {
@@ -772,34 +775,40 @@ const EcoRegister: React.FC<EcoRegisterProps> = ({ onRegister }) => {
       {showSuccessModal && (
         <div
           className="eco-success-modal-overlay"
-          onClick={() => setShowSuccessModal(false)}
+          onClick={() => {
+            setShowSuccessModal(false);
+            navigate("/login");
+          }}
         >
           <div
             className="eco-success-modal"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="eco-success-content">
-              <div className="eco-success-icon">🌱</div>
-              <h2 className="eco-success-title">Conta Criada com Sucesso!</h2>
+              <div className="eco-success-icon">📧</div>
+              <h2 className="eco-success-title">Verifique seu E-mail!</h2>
               <p className="eco-success-message">
-                Bem-vindo à comunidade EthenaLearn! Sua jornada sustentável
-                começa agora.
+                Enviamos um link de confirmação para <strong>{formData.email}</strong>.
+                Clique no link para ativar sua conta e começar a aprender!
               </p>
               <div className="eco-success-stats">
                 <div className="eco-success-stat">
-                  <span className="eco-stat-icon">🌍</span>
-                  <span>Você economizou 1.2kg de CO₂</span>
+                  <span className="eco-stat-icon">📬</span>
+                  <span>Verifique sua caixa de entrada</span>
                 </div>
                 <div className="eco-success-stat">
-                  <span className="eco-stat-icon">🌳</span>
-                  <span>Equivalente a plantar 0.5 árvores</span>
+                  <span className="eco-stat-icon">⏰</span>
+                  <span>O link expira em 24 horas</span>
                 </div>
               </div>
               <button
                 className="eco-success-button"
-                onClick={() => setShowSuccessModal(false)}
+                onClick={() => {
+                  setShowSuccessModal(false);
+                  navigate("/login");
+                }}
               >
-                Começar Jornada 🚀
+                Ir para Login 🚀
               </button>
             </div>
           </div>

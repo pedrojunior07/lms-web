@@ -279,23 +279,15 @@ const StudentDashboard = () => {
                       <div className="course-content">
                         <div className="d-flex justify-content-between mb-2">
                           <div className="d-flex align-items-center">
-                            <Link
-                              to={all_routes.instructorDetails}
-                              className="avatar avatar-sm"
-                            >
-                              <ImageWithBasePath
-                                src={course.instructorAvatar || "assets/img/user/user-29.jpg"}
-                                alt="img"
-                                className="img-fluid avatar avatar-sm rounded-circle"
-                              />
-                            </Link>
+                            <span className="avatar avatar-sm bg-primary rounded-circle d-flex align-items-center justify-content-center">
+                              <span className="text-white fs-10 fw-bold">
+                                {course.instructor?.split(' ').map((n: string) => n.charAt(0)).join('').substring(0, 2) || 'IN'}
+                              </span>
+                            </span>
                             <div className="ms-2">
-                              <Link
-                                to={all_routes.instructorDetails}
-                                className="link-default fs-14"
-                              >
+                              <span className="link-default fs-14">
                                 {course.instructor}
-                              </Link>
+                              </span>
                             </div>
                           </div>
                           <span className="badge badge-light rounded-pill bg-light d-inline-flex align-items-center fs-13 fw-medium mb-0">

@@ -1,8 +1,8 @@
 import axios from "axios";
 
-// CORREÇÃO: Adicione o IP que está faltando
+// API configurada para localhost
 const api = axios.create({
-  baseURL: "http://192.250.224.214:8585/e-learning/api", // IP estava faltando aqui
+  baseURL: "http://localhost:8085/e-learning/api",
   headers: {
     "Content-Type": "application/json",
   },
@@ -17,7 +17,7 @@ api.interceptors.request.use((config) => {
 });
 
 const apiMultipart = axios.create({
-  baseURL: "http://192.250.224.214:8585/e-learning/api",
+  baseURL: "http://localhost:8085/e-learning/api",
 });
 
 apiMultipart.interceptors.request.use((config) => {

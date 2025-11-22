@@ -32,8 +32,9 @@ export function useBackendUploader({
     setError(null);
   };
 
-  const upload = async (path?: string, onProgress?: (progress: number) => void) => {
-    if (!file) {
+  const upload = async (path?: string, onProgress?: (progress: number) => void, fileToUpload?: File) => {
+    const uploadFile = fileToUpload || file;
+    if (!uploadFile) {
       setError("Nenhum arquivo selecionado");
       return null;
     }
@@ -44,7 +45,7 @@ export function useBackendUploader({
 
     try {
       const formData = new FormData();
-      formData.append("file", file);
+      formData.append("file", uploadFile);
       formData.append("path", path || defaultPath);
 
       const response = await apiMultipart.post(uploadUrl, formData, {

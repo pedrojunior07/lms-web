@@ -18,6 +18,7 @@ interface Lesson {
   } | null;
 }
 
+
 interface Module {
   id: number;
   title: string;
@@ -198,272 +199,394 @@ const formatDate = (dateString: string): string => {
   });
 };
 
-// Estilos do certificado
+// Estilos do certificado - Design Internacional Profissional
 const certificateStyles = `
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Cinzel:wght@400;700&family=Cormorant+Garamond:wght@400;600;700&display=swap');
+
   .certificate-wrapper {
     padding: 20px;
   }
 
   .certificate-container-printable {
-    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-    border: 20px solid #2c3e50;
-    border-radius: 15px;
-    padding: 50px;
+    background: #fffef8;
     position: relative;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-    min-height: 800px;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    font-family: 'Times New Roman', serif;
+    padding: 0;
+    box-shadow: 0 25px 80px rgba(0,0,0,0.4);
+    min-height: 850px;
+    font-family: 'Cormorant Garamond', 'Times New Roman', serif;
   }
 
-  .certificate-border {
-    border: 2px solid #3498db;
-    padding: 40px;
+  /* Borda ornamental externa */
+  .certificate-outer-border {
+    border: 3px solid #b8860b;
+    padding: 8px;
+    background: linear-gradient(135deg, #f5e6c8 0%, #faf3e0 50%, #f5e6c8 100%);
+  }
+
+  /* Borda ornamental interna */
+  .certificate-inner-border {
+    border: 2px solid #8b7355;
+    padding: 40px 50px;
+    background: #fffef8;
     position: relative;
-    background: white;
-    min-height: 700px;
+  }
+
+  /* Cantos decorativos */
+  .certificate-inner-border::before,
+  .certificate-inner-border::after {
+    content: '❧';
+    position: absolute;
+    font-size: 24px;
+    color: #b8860b;
+  }
+
+  .certificate-inner-border::before {
+    top: 10px;
+    left: 15px;
+  }
+
+  .certificate-inner-border::after {
+    bottom: 10px;
+    right: 15px;
+    transform: rotate(180deg);
   }
 
   .certificate-header {
     text-align: center;
-    margin-bottom: 40px;
-    border-bottom: 3px solid #ecf0f1;
-    padding-bottom: 30px;
+    margin-bottom: 25px;
   }
 
   .certificate-logo {
-    margin-bottom: 20px;
+    margin-bottom: 15px;
+  }
+
+  .certificate-logo img {
+    max-height: 80px;
+  }
+
+  .certificate-institution {
+    font-family: 'Cinzel', serif;
+    font-size: 1.1em;
+    color: #5c4a32;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 5px;
   }
 
   .certificate-main-title {
-    font-size: 3.5em;
-    font-weight: bold;
-    color: #2c3e50;
-    margin: 0;
+    font-family: 'Playfair Display', serif;
+    font-size: 3.2em;
+    font-weight: 700;
+    color: #1a3a52;
+    margin: 10px 0;
     text-transform: uppercase;
-    letter-spacing: 8px;
-    text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+    letter-spacing: 12px;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
   }
 
   .certificate-subtitle {
-    font-size: 1.4em;
-    color: #7f8c8d;
-    margin: 10px 0 0 0;
+    font-size: 1.3em;
+    color: #5c4a32;
+    margin: 5px 0 0 0;
     font-style: italic;
+    letter-spacing: 2px;
+  }
+
+  .certificate-divider {
+    width: 200px;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #b8860b, transparent);
+    margin: 20px auto;
   }
 
   .certificate-body {
     text-align: center;
-    flex-grow: 1;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
+    padding: 10px 0;
   }
 
   .certificate-text-intro {
-    font-size: 1.3em;
-    color: #34495e;
-    margin-bottom: 20px;
+    font-size: 1.15em;
+    color: #3d3d3d;
+    margin-bottom: 15px;
+    letter-spacing: 1px;
   }
 
   .student-name-container {
-    margin: 30px 0;
-    padding: 20px;
-    background: linear-gradient(135deg, #3498db, #2c3e50);
-    border-radius: 10px;
-    box-shadow: 0 10px 30px rgba(52, 152, 219, 0.3);
+    margin: 15px 0;
+    padding: 15px 30px;
+    position: relative;
   }
 
   .student-name {
-    font-size: 2.8em;
-    font-weight: bold;
-    color: white;
+    font-family: 'Playfair Display', serif;
+    font-size: 2.6em;
+    font-weight: 700;
+    color: #1a3a52;
     margin: 0;
-    text-transform: uppercase;
-    letter-spacing: 3px;
-    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    letter-spacing: 2px;
+    border-bottom: 2px solid #b8860b;
+    padding-bottom: 10px;
+    display: inline-block;
   }
 
   .certificate-text-main {
-    font-size: 1.4em;
-    color: #34495e;
-    margin: 30px 0 20px 0;
+    font-size: 1.15em;
+    color: #3d3d3d;
+    margin: 20px 0 10px 0;
+    letter-spacing: 1px;
   }
 
   .course-title-container {
-    margin: 20px 0 30px 0;
-    padding: 15px;
-    border: 2px dashed #3498db;
-    border-radius: 8px;
-    background: #f8f9fa;
+    margin: 10px 0 20px 0;
+    padding: 10px 20px;
   }
 
   .course-title {
-    font-size: 2em;
-    font-weight: bold;
-    color: #e74c3c;
+    font-family: 'Playfair Display', serif;
+    font-size: 1.8em;
+    font-weight: 600;
+    color: #8b4513;
     margin: 0;
     font-style: italic;
+    letter-spacing: 1px;
   }
 
   .certificate-details {
-    font-size: 1.2em;
-    color: #2c3e50;
-    line-height: 1.6;
-    margin: 30px 0;
-    max-width: 800px;
-    margin-left: auto;
-    margin-right: auto;
+    font-size: 1.05em;
+    color: #4a4a4a;
+    line-height: 1.7;
+    margin: 15px auto;
+    max-width: 700px;
+    text-align: center;
   }
 
-  .certificate-code-container {
+  .certificate-meta-container {
     display: flex;
-    justify-content: space-around;
-    margin: 40px 0;
-    padding: 20px;
-    background: #ecf0f1;
-    border-radius: 10px;
+    justify-content: center;
+    gap: 40px;
+    margin: 25px 0;
     flex-wrap: wrap;
-    gap: 20px;
   }
 
-  .certificate-code, .certificate-date {
+  .certificate-meta-item {
+    text-align: center;
+  }
+
+  .certificate-meta-label {
+    font-size: 0.85em;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 5px;
+  }
+
+  .certificate-meta-value {
+    font-size: 1em;
+    color: #1a3a52;
+    font-weight: 600;
+  }
+
+  .certificate-verification {
+    background: #f8f6f0;
+    border: 1px solid #e0dcd3;
+    border-radius: 5px;
+    padding: 12px 20px;
+    margin: 20px auto;
+    max-width: 400px;
+    text-align: center;
+  }
+
+  .verification-label {
+    font-size: 0.75em;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 5px;
+  }
+
+  .verification-code {
+    font-family: 'Courier New', monospace;
     font-size: 1.1em;
-    color: #2c3e50;
-  }
-
-  .certificate-code strong, .certificate-date strong {
-    color: #e74c3c;
+    color: #1a3a52;
+    font-weight: bold;
+    letter-spacing: 2px;
   }
 
   .certificate-footer {
-    margin-top: 40px;
-    border-top: 2px solid #bdc3c7;
-    padding-top: 30px;
+    margin-top: 30px;
+    padding-top: 20px;
   }
 
   .signatures {
     display: flex;
-    justify-content: center;
+    justify-content: space-around;
+    flex-wrap: wrap;
+    gap: 30px;
   }
 
   .signature-block {
     text-align: center;
+    min-width: 200px;
   }
 
   .signature-line {
-    width: 300px;
-    height: 2px;
-    background: #2c3e50;
-    margin: 0 auto 10px auto;
+    width: 180px;
+    height: 1px;
+    background: #1a3a52;
+    margin: 0 auto 8px auto;
   }
 
   .signature-name {
-    font-size: 1.2em;
-    font-weight: bold;
-    color: #2c3e50;
-    margin: 5px 0;
+    font-family: 'Playfair Display', serif;
+    font-size: 1em;
+    font-weight: 600;
+    color: #1a3a52;
+    margin: 5px 0 3px 0;
   }
 
   .signature-role {
-    font-size: 1em;
-    color: #7f8c8d;
+    font-size: 0.85em;
+    color: #666;
     margin: 0;
+    font-style: italic;
   }
 
+  /* Selo de autenticidade */
+  .certificate-seal {
+    position: absolute;
+    bottom: 60px;
+    right: 60px;
+    width: 100px;
+    height: 100px;
+    border: 3px solid #b8860b;
+    border-radius: 50%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(circle, #fffef8 0%, #f5e6c8 100%);
+    box-shadow: 0 3px 10px rgba(0,0,0,0.15);
+  }
+
+  .seal-icon {
+    font-size: 28px;
+    color: #b8860b;
+    margin-bottom: 3px;
+  }
+
+  .seal-text {
+    font-size: 0.6em;
+    color: #5c4a32;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 600;
+  }
+
+  /* Marca d'água */
   .certificate-watermark {
     position: absolute;
     top: 50%;
     left: 50%;
-    transform: translate(-50%, -50%) rotate(-45deg);
+    transform: translate(-50%, -50%) rotate(-30deg);
     opacity: 0.03;
     pointer-events: none;
     z-index: 1;
   }
 
   .watermark-text {
-    font-size: 120px;
+    font-family: 'Cinzel', serif;
+    font-size: 100px;
     font-weight: bold;
-    color: #2c3e50;
+    color: #1a3a52;
     white-space: nowrap;
+  }
+
+  /* Número de registro */
+  .certificate-registration {
+    text-align: center;
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid #e0dcd3;
+  }
+
+  .registration-text {
+    font-size: 0.75em;
+    color: #888;
+    letter-spacing: 1px;
   }
 
   @media print {
     body * {
       visibility: hidden;
     }
-    
+
     .certificate-container-printable,
     .certificate-container-printable * {
       visibility: visible;
     }
-    
+
     .certificate-container-printable {
       position: absolute;
       left: 0;
       top: 0;
       width: 100%;
       margin: 0;
-      padding: 0;
-      border: none;
       box-shadow: none;
-      background: white !important;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
     }
-    
+
     .modal-footer,
     .modal-header {
       display: none !important;
     }
-    
-    .certificate-border {
-      border: 3px solid #2c3e50 !important;
-      margin: 0;
-      padding: 30px !important;
-    }
-    
-    .student-name {
-      color: #2c3e50 !important;
+
+    .certificate-seal {
       -webkit-print-color-adjust: exact;
-    }
-    
-    .student-name-container {
-      background: #f8f9fa !important;
-      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
     }
   }
 
   @media (max-width: 768px) {
     .certificate-container-printable {
-      padding: 20px;
       min-height: auto;
     }
-    
-    .certificate-border {
-      padding: 20px;
+
+    .certificate-inner-border {
+      padding: 25px 20px;
     }
-    
+
     .certificate-main-title {
-      font-size: 2.5em;
-      letter-spacing: 4px;
+      font-size: 2.2em;
+      letter-spacing: 6px;
     }
-    
+
     .student-name {
-      font-size: 2em;
+      font-size: 1.8em;
     }
-    
+
     .course-title {
-      font-size: 1.6em;
+      font-size: 1.4em;
     }
-    
-    .certificate-code-container {
+
+    .signatures {
       flex-direction: column;
-      text-align: center;
+      align-items: center;
     }
-    
+
+    .certificate-seal {
+      width: 70px;
+      height: 70px;
+      bottom: 30px;
+      right: 30px;
+    }
+
+    .seal-icon {
+      font-size: 20px;
+    }
+
     .watermark-text {
-      font-size: 80px;
+      font-size: 60px;
     }
   }
 `;
@@ -777,16 +900,16 @@ const UniversalPlayer = ({
 
 const getCertificateApiBaseUrl = () => {
   const isProduction = process.env.NODE_ENV === 'production';
-  return isProduction 
+  return isProduction
     ? 'https://your-production-domain.com/e-learning/api'
-    : 'http://192.250.224.214:8585/e-learning/api';
+    : 'http://localhost:8085/e-learning/api';
 };
 
 const CourseWatch = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const courseId = searchParams.get("id");
-  const studentId = 5;
+  const studentId = Number(localStorage.getItem("id"));
 
   const [activeTab, setActiveTab] = useState<TabKey>("overview");
   const [expandedModule, setExpandedModule] = useState<number | null>(null);
@@ -1379,113 +1502,155 @@ const CourseWatch = () => {
     const existingCert = getCertificateForCurrentCourse();
     const isExisting = !!existingCert;
 
+    // Calcular carga horária estimada (45 min por aula)
+    const totalHours = Math.ceil((totalLessons * 45) / 60);
+
     return (
-      <div className="modal fade show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.9)' }} tabIndex={-1}>
+      <div className="modal fade show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.95)' }} tabIndex={-1}>
         <div className="modal-dialog modal-fullscreen">
           <div className="modal-content bg-transparent border-0">
-            <div className="modal-header bg-dark bg-opacity-50 border-bottom-0">
-              <h5 className="modal-title text-white">
-                🎓 Certificado de Conclusão
-                {isExisting && <span className="badge bg-success ms-2">JÁ EMITIDO</span>}
+            <div className="modal-header bg-dark bg-opacity-75 border-bottom-0">
+              <h5 className="modal-title text-white d-flex align-items-center">
+                <i className="fas fa-award me-2 text-warning"></i>
+                Certificado de Conclusão
+                {isExisting && <span className="badge bg-success ms-2">VERIFICADO</span>}
               </h5>
-              <button 
-                type="button" 
-                className="btn-close btn-close-white" 
+              <button
+                type="button"
+                className="btn-close btn-close-white"
                 onClick={() => setShowCertificateModal(false)}
               ></button>
             </div>
-            
-            <div className="modal-body p-0 d-flex align-items-center justify-content-center">
-              <div className="certificate-wrapper" style={{ maxWidth: '1200px', width: '100%' }}>
+
+            <div className="modal-body p-3 d-flex align-items-center justify-content-center overflow-auto">
+              <div className="certificate-wrapper" style={{ maxWidth: '1000px', width: '100%' }}>
                 <div id="certificate-content" className="certificate-container-printable">
-                  <div className="certificate-border">
-                    <div className="certificate-header">
-                      <div className="certificate-logo">
-                        <img src="/assets/img/logo.png" alt="Logo" width="200" />
-                      </div>
-                      <div className="certificate-title-section">
-                        <h1 className="certificate-main-title">CERTIFICADO</h1>
+                  <div className="certificate-outer-border">
+                    <div className="certificate-inner-border">
+
+                      {/* Header */}
+                      <div className="certificate-header">
+                        <div className="certificate-logo">
+                          <img src="/assets/img/logo.png" alt="Logo" />
+                        </div>
+                        <p className="certificate-institution">Plataforma de E-Learning</p>
+                        <h1 className="certificate-main-title">Certificado</h1>
                         <p className="certificate-subtitle">de Conclusão de Curso</p>
-                      </div>
-                    </div>
-
-                    <div className="certificate-body">
-                      <div className="certificate-text-intro">
-                        A plataforma de E-learning certifica que
-                      </div>
-                      
-                      <div className="student-name-container">
-                        <h2 className="student-name">
-                          {certificate.student.firstName} {certificate.student.lastName}
-                        </h2>
+                        <div className="certificate-divider"></div>
                       </div>
 
-                      <div className="certificate-text-main">
-                        concluiu com êxito o curso de
-                      </div>
-
-                      <div className="course-title-container">
-                        <h3 className="course-title">"{certificate.course.title}"</h3>
-                      </div>
-
-                      <div className="certificate-details">
-                        <p>
-                          com carga horária total de {totalLessons * 45} minutos, 
-                          demonstrando dedicação e competência na aquisição dos 
-                          conhecimentos e habilidades necessárias para o domínio do assunto.
+                      {/* Body */}
+                      <div className="certificate-body">
+                        <p className="certificate-text-intro">
+                          Certificamos que
                         </p>
+
+                        <div className="student-name-container">
+                          <h2 className="student-name">
+                            {certificate.student.firstName} {certificate.student.lastName}
+                          </h2>
+                        </div>
+
+                        <p className="certificate-text-main">
+                          concluiu com aproveitamento o curso
+                        </p>
+
+                        <div className="course-title-container">
+                          <h3 className="course-title">{certificate.course.title}</h3>
+                        </div>
+
+                        <div className="certificate-details">
+                          <p>
+                            Com carga horária de <strong>{totalHours} horas</strong>, demonstrando
+                            domínio dos conhecimentos e habilidades propostos no programa do curso.
+                          </p>
+                        </div>
+
+                        {/* Meta informações */}
+                        <div className="certificate-meta-container">
+                          <div className="certificate-meta-item">
+                            <div className="certificate-meta-label">Data de Emissão</div>
+                            <div className="certificate-meta-value">{formatDate(certificate.issuedAt)}</div>
+                          </div>
+                          <div className="certificate-meta-item">
+                            <div className="certificate-meta-label">Categoria</div>
+                            <div className="certificate-meta-value">{certificate.course.category || 'Geral'}</div>
+                          </div>
+                          <div className="certificate-meta-item">
+                            <div className="certificate-meta-label">Nível</div>
+                            <div className="certificate-meta-value">{certificate.course.level || 'Todos os níveis'}</div>
+                          </div>
+                        </div>
+
+                        {/* Código de verificação */}
+                        <div className="certificate-verification">
+                          <div className="verification-label">Código de Verificação</div>
+                          <div className="verification-code">{certificate.certificateCode}</div>
+                        </div>
                       </div>
 
-                      <div className="certificate-code-container">
-                        <div className="certificate-code">
-                          <strong>Código de Verificação:</strong> {certificate.certificateCode}
+                      {/* Footer com assinaturas */}
+                      <div className="certificate-footer">
+                        <div className="signatures">
+                          <div className="signature-block">
+                            <div className="signature-line"></div>
+                            <p className="signature-name">Coordenação Pedagógica</p>
+                            <p className="signature-role">Direção Acadêmica</p>
+                          </div>
+                          <div className="signature-block">
+                            <div className="signature-line"></div>
+                            <p className="signature-name">Secretaria Geral</p>
+                            <p className="signature-role">Registro e Certificação</p>
+                          </div>
                         </div>
-                        <div className="certificate-date">
-                          <strong>Data de Emissão:</strong> {formatDate(certificate.issuedAt)}
+
+                        {/* Número de registro */}
+                        <div className="certificate-registration">
+                          <p className="registration-text">
+                            Registro Nº {certificate.certificateCode.substring(0, 8).toUpperCase()} •
+                            Verifique a autenticidade em nosso portal
+                          </p>
                         </div>
                       </div>
-                    </div>
 
-                    <div className="certificate-footer">
-                      <div className="signatures">
-                        <div className="signature-block">
-                          <div className="signature-line"></div>
-                          <p className="signature-name">Diretoria Acadêmica</p>
-                          <p className="signature-role">Plataforma de E-learning</p>
-                        </div>
+                      {/* Selo de autenticidade */}
+                      <div className="certificate-seal">
+                        <div className="seal-icon">✓</div>
+                        <div className="seal-text">Válido</div>
                       </div>
-                    </div>
 
-                    <div className="certificate-watermark">
-                      <div className="watermark-text">CERTIFICADO VÁLIDO</div>
+                      {/* Marca d'água */}
+                      <div className="certificate-watermark">
+                        <div className="watermark-text">CERTIFICADO</div>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="modal-footer bg-dark bg-opacity-50 border-top-0 justify-content-center">
-              <div className="btn-group" role="group">
-                <button 
-                  type="button" 
-                  className="btn btn-secondary"
+            <div className="modal-footer bg-dark bg-opacity-75 border-top-0 justify-content-center">
+              <div className="d-flex gap-2 flex-wrap justify-content-center">
+                <button
+                  type="button"
+                  className="btn btn-outline-light"
                   onClick={() => setShowCertificateModal(false)}
                 >
                   <i className="fas fa-times me-2"></i>
                   Fechar
                 </button>
-                
-                <button 
-                  type="button" 
+
+                <button
+                  type="button"
                   className="btn btn-info"
                   onClick={printCertificate}
                 >
                   <i className="fas fa-print me-2"></i>
                   Imprimir
                 </button>
-                
-                <button 
-                  type="button" 
+
+                <button
+                  type="button"
                   className="btn btn-success"
                   onClick={downloadCertificate}
                 >

@@ -21,7 +21,7 @@ const LoginRoute = () => {
     setLoading(true);
     try {
       const response = await axios.post(
-        "http://192.250.224.214:8585/e-learning/api/auth/login",
+        "http://localhost:8085/e-learning/api/auth/login",
         { email, password }
       );
 

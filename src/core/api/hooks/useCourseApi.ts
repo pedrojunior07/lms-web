@@ -89,10 +89,13 @@ export const useCourseApi = () => {
   };
 
   const saveCurriculum = async (courseId: any, curriculumData: any) => {
+    console.log("Saving curriculum for course:", courseId);
+    console.log("Curriculum data being sent:", JSON.stringify(curriculumData, null, 2));
     const response = await api.put(
       `/courses/${courseId}/step-3/curriculum`,
       curriculumData
     );
+    console.log("Curriculum save response:", response.data);
     return response.data;
   };
 

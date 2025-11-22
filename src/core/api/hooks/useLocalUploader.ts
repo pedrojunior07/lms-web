@@ -54,9 +54,6 @@ export function useLocalUploader() {
                   uploadPath = "pdfs";
                 }
 
-                // Seleciona o arquivo
-                fileUploader.selectFile(lesson.content);
-                
                 // Configura callback de progresso
                 const onProgress = (progress: number) => {
                   setUploadProgressMap(prev => ({
@@ -65,8 +62,8 @@ export function useLocalUploader() {
                   }));
                 };
 
-                // Faz upload do arquivo
-                const fileUrl = await fileUploader.upload(uploadPath, onProgress);
+                // Faz upload do arquivo passando diretamente
+                const fileUrl = await fileUploader.upload(uploadPath, onProgress, lesson.content);
                 
                 // Limpa o progresso após conclusão
                 setTimeout(() => {
@@ -83,8 +80,7 @@ export function useLocalUploader() {
                 };
               } catch (error) {
                 console.error(`Erro no upload da aula ${lessonIndex}:`, error);
-                // Mantém o arquivo original em caso de erro
-                return lesson;
+                throw new Error(`Falha no upload da aula "${lesson.title}": ${error}`);
               }
             }
             

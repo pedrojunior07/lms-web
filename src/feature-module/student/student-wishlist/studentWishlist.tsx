@@ -107,18 +107,14 @@ const StudentWishlist = () => {
                     <div className="d-flex flex-wrap align-items-center justify-content-between">
                       <div className="d-flex align-items-center">
                         <div className="avatar avatar-sm rounded-circle">
-                          <Link to={route.instructorDetails}>
-                            <ImageWithBasePath
-                              className="img-fluid rounded-circle"
-                              src="./assets/img/avatar/avatar1.jpg"
-                              alt="im"
-                            />
-                          </Link>
+                          <ImageWithBasePath
+                            className="img-fluid rounded-circle"
+                            src="./assets/img/avatar/avatar1.jpg"
+                            alt="im"
+                          />
                         </div>
                         <p className="fs-14 ms-2">
-                          <Link to={route.instructorDetails}>
-                            David Benitez
-                          </Link>
+                          David Benitez
                         </p>
                       </div>
                       <span className="tag-btn">Design</span>
@@ -164,16 +160,14 @@ const StudentWishlist = () => {
                     <div className="d-flex flex-wrap align-items-center justify-content-between">
                       <div className="d-flex align-items-center">
                         <div className="avatar avatar-sm rounded-circle">
-                          <Link to={route.instructorDetails}>
-                            <ImageWithBasePath
-                              className="img-fluid rounded-circle object-fit-cover"
-                              src="./assets/img/avatar/avatar2.jpg"
-                              alt="im"
-                            />
-                          </Link>
+                          <ImageWithBasePath
+                            className="img-fluid rounded-circle object-fit-cover"
+                            src="./assets/img/avatar/avatar2.jpg"
+                            alt="im"
+                          />
                         </div>
                         <p className="fs-14 ms-2">
-                          <Link to={route.instructorDetails}>Ana Reyes</Link>
+                          Ana Reyes
                         </p>
                       </div>
                       <span className="tag-btn">Wordpress</span>
@@ -219,18 +213,14 @@ const StudentWishlist = () => {
                     <div className="d-flex flex-wrap align-items-center justify-content-between">
                       <div className="d-flex align-items-center">
                         <div className="avatar avatar-sm rounded-circle">
-                          <Link to={route.instructorDetails}>
-                            <ImageWithBasePath
-                              className="img-fluid rounded-circle object-fit-cover"
-                              src="./assets/img/avatar/avatar3.jpg"
-                              alt="im"
-                            />
-                          </Link>
+                          <ImageWithBasePath
+                            className="img-fluid rounded-circle object-fit-cover"
+                            src="./assets/img/avatar/avatar3.jpg"
+                            alt="im"
+                          />
                         </div>
                         <p className="fs-14 ms-2">
-                          <Link to={route.instructorDetails}>
-                            Andrew Pirtle
-                          </Link>
+                          Andrew Pirtle
                         </p>
                       </div>
                       <span className="tag-btn">Design</span>
@@ -276,18 +266,15 @@ const StudentWishlist = () => {
                     <div className="d-flex flex-wrap align-items-center justify-content-between">
                       <div className="d-flex align-items-center">
                         <div className="avatar avatar-sm rounded-circle">
-                          <Link to={route.instructorDetails}>
-                            <ImageWithBasePath
+                          <ImageWithBasePath
                               className="img-fluid rounded-circle object-fit-cover"
                               src="./assets/img/avatar/avatar4.jpg"
                               alt="im"
                             />
-                          </Link>
+
                         </div>
                         <p className="fs-14 ms-2">
-                          <Link to={route.instructorDetails}>
-                            Christy Garner
-                          </Link>
+Christy Garner
                         </p>
                       </div>
                       <span className="tag-btn">Programming</span>
@@ -333,18 +320,15 @@ const StudentWishlist = () => {
                     <div className="d-flex flex-wrap align-items-center justify-content-between">
                       <div className="d-flex align-items-center">
                         <div className="avatar avatar-sm rounded-circle">
-                          <Link to={route.instructorDetails}>
-                            <ImageWithBasePath
+                          <ImageWithBasePath
                               className="img-fluid rounded-circle object-fit-cover"
                               src="./assets/img/avatar/avatar5.jpg"
                               alt="im"
                             />
-                          </Link>
+
                         </div>
                         <p className="fs-14 ms-2">
-                          <Link to={route.instructorDetails}>
-                            Justin Gregory
-                          </Link>
+Justin Gregory
                         </p>
                       </div>
                       <span className="tag-btn">Programming</span>
@@ -390,18 +374,15 @@ const StudentWishlist = () => {
                     <div className="d-flex flex-wrap align-items-center justify-content-between">
                       <div className="d-flex align-items-center">
                         <div className="avatar avatar-sm rounded-circle">
-                          <Link to={route.instructorDetails}>
-                            <ImageWithBasePath
+                          <ImageWithBasePath
                               className="img-fluid rounded-circle object-fit-cover"
                               src="./assets/img/avatar/avatar6.jpg"
                               alt="im"
                             />
-                          </Link>
+
                         </div>
                         <p className="fs-14 ms-2">
-                          <Link to={route.instructorDetails}>
-                            Carolyn Hines
-                          </Link>
+Carolyn Hines
                         </p>
                       </div>
                       <span className="tag-btn">Programming</span>
@@ -447,18 +428,15 @@ const StudentWishlist = () => {
                     <div className="d-flex flex-wrap align-items-center justify-content-between">
                       <div className="d-flex align-items-center">
                         <div className="avatar avatar-sm rounded-circle">
-                          <Link to={route.instructorDetails}>
-                            <ImageWithBasePath
+                          <ImageWithBasePath
                               className="img-fluid rounded-circle object-fit-cover"
                               src="./assets/img/avatar/avatar7.jpg"
                               alt="im"
                             />
-                          </Link>
+
                         </div>
                         <p className="fs-14 ms-2">
-                          <Link to={route.instructorDetails}>
-                            Rafael Miller
-                          </Link>
+Rafael Miller
                         </p>
                       </div>
                       <span className="tag-btn">Programming</span>
@@ -504,16 +482,15 @@ const StudentWishlist = () => {
                     <div className="d-flex flex-wrap align-items-center justify-content-between">
                       <div className="d-flex align-items-center">
                         <div className="avatar avatar-sm rounded-circle">
-                          <Link to={route.instructorDetails}>
-                            <ImageWithBasePath
+                          <ImageWithBasePath
                               className="img-fluid rounded-circle object-fit-cover"
                               src="./assets/img/avatar/avatar8.jpg"
                               alt="im"
                             />
-                          </Link>
+
                         </div>
                         <p className="fs-14 ms-2">
-                          <Link to={route.instructorDetails}>Nancy Duarte</Link>
+                          Nancy Duarte
                         </p>
                       </div>
                       <span className="tag-btn">Deign</span>
@@ -559,16 +536,15 @@ const StudentWishlist = () => {
                     <div className="d-flex flex-wrap align-items-center justify-content-between">
                       <div className="d-flex align-items-center">
                         <div className="avatar avatar-sm rounded-circle">
-                          <Link to={route.instructorDetails}>
-                            <ImageWithBasePath
+                          <ImageWithBasePath
                               className="img-fluid rounded-circle object-fit-cover"
                               src="./assets/img/avatar/avatar9.jpg"
                               alt="im"
                             />
-                          </Link>
+
                         </div>
                         <p className="fs-14 ms-2">
-                          <Link to={route.instructorDetails}>James Kagan</Link>
+                          James Kagan
                         </p>
                       </div>
                       <span className="tag-btn">Programming</span>

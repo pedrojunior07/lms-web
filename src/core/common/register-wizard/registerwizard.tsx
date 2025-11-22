@@ -150,7 +150,7 @@ const RegisterWizard = () => {
 
     try {
       const response = await axios.post(
-        "http://66.23.225.61:8585/e-learning/api/auth/register",
+        "http://localhost:8085/e-learning/api/auth/register",
         {
           role: form.role,
           firstName: form.firstName,

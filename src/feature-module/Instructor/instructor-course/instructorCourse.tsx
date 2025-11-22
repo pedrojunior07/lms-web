@@ -10,7 +10,6 @@ import Table from "../../../core/common/dataTable/index";
 import { CourseCardDto } from "../../../core/common/data/interface";
 
 import { useCourseApi } from "../../../core/api/hooks/useCourseApi";
-// import { useBunnyUploader } from "../../../core/api/hooks/useLocalUploader";
 import { useBackendUploader } from "../../../core/api/hooks/useBackendUploader";
 import DashboardHeader from "../instructor-dashboard/DashboardHeader";
 
@@ -152,8 +151,9 @@ const InstructorCourse = () => {
       render: (_: unknown, record: CourseCardDto) => (
         <div className="d-flex align-items-center">
           <Link
-            to={`${"all_routes.editCourse"}/${record.id}`}
+            to={`${all_routes.addNewCourse}?id=${record.id}`}
             className="d-inline-flex fs-14 me-1 action-icon"
+            title="Editar curso"
           >
             <i className="isax isax-edit-2" />
           </Link>
@@ -162,6 +162,7 @@ const InstructorCourse = () => {
             className="d-inline-flex fs-14 action-icon"
             data-bs-toggle="modal"
             data-bs-target="#delete_modal"
+            title="Excluir curso"
           >
             <i className="isax isax-trash" />
           </Link>

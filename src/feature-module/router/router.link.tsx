@@ -78,6 +78,7 @@ import StudentWishlist from "../student/student-wishlist/studentWishlist";
 import StudentReviews from "../student/student-reviews/studentReviews";
 import StudentQuiz from "../student/student-quiz/studentQuiz";
 import StudentOrder from "../student/student-order-history/studentOrder";
+import StudentOrders from "../student/student-orders/studentOrders";
 import StudentRefferal from "../student/student-refferal/studentRefferal";
 import StudentMessage from "../student/student-message/studentMessage";
 import StudentsDetails from "../Instructor/student-details/studentsDetails";
@@ -467,6 +468,11 @@ export const publicRoutes = [
   {
     path: routes.studentOrderHistory,
     element: <StudentOrder />,
+    route: Route,
+  },
+  {
+    path: "/student/orders",
+    element: <StudentOrders />,
     route: Route,
   },
   {

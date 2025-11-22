@@ -1,12 +1,21 @@
-import React from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { all_routes } from "../../router/all_routes";
 import Breadcrumb from "../../../core/common/Breadcrumb/breadcrumb";
 import { Link } from "react-router-dom";
 import ImageWithBasePath from "../../../core/common/imageWithBasePath";
 import StudentSidebar from "../common/studentSidebar";
+import { useCourseOrders, OrderStatus, CourseOrder } from "../../../core/api/hooks/useCourseOrders";
 
 const StudentOrder = () => {
   const route = all_routes;
+  const studentId = Number(localStorage.getItem("id"));
+  const { orders, loading, error, fetchStudentOrders, uploadProof } = useCourseOrders();
+
+  const [uploadModal, setUploadModal] = useState<{ orderId: number; show: boolean }>({ orderId: 0, show: false });
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [selectedOrder, setSelectedOrder] = useState<CourseOrder | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Recupera os dados do usuário do localStorage
   const getUserData = () => {
@@ -26,6 +35,34 @@ const StudentOrder = () => {
   }
 
   const userData = getUserData()
+
+  useEffect(() => {
+    if (studentId) {
+      fetchStudentOrders(studentId);
+    }
+  }, [studentId, fetchStudentOrders]);
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+      setPreviewUrl(URL.createObjectURL(file));
+    }
+  };
+
+  const handleUpload = async () => {
+    if (!selectedFile) return;
+
+    try {
+      await uploadProof(uploadModal.orderId, selectedFile);
+      setUploadModal({ orderId: 0, show: false });
+      setSelectedFile(null);
+      setPreviewUrl(null);
+      alert("Comprovativo enviado com sucesso!");
+    } catch (err) {
+      console.error("Erro ao enviar comprovativo:", err);
+    }
+  };
 
   // Formata o role para exibição
   const formatRole = (role: string | null) => {
@@ -51,6 +88,63 @@ const StudentOrder = () => {
     }
     return 'assets/img/user/user-02.jpg'
   }
+
+  const getStatusBadge = (status: OrderStatus) => {
+    switch (status) {
+      case "PENDING":
+        return (
+          <span className="badge bg-warning d-inline-flex align-items-center">
+            <i className="fa-solid fa-circle fs-5 me-1" />
+            Aguardando
+          </span>
+        );
+      case "PROOF_UPLOADED":
+        return (
+          <span className="badge bg-info d-inline-flex align-items-center">
+            <i className="fa-solid fa-circle fs-5 me-1" />
+            Em Análise
+          </span>
+        );
+      case "APPROVED":
+        return (
+          <span className="badge bg-success d-inline-flex align-items-center">
+            <i className="fa-solid fa-circle fs-5 me-1" />
+            Aprovado
+          </span>
+        );
+      case "REJECTED":
+        return (
+          <span className="badge bg-danger d-inline-flex align-items-center">
+            <i className="fa-solid fa-circle fs-5 me-1" />
+            Rejeitado
+          </span>
+        );
+      default:
+        return (
+          <span className="badge bg-secondary d-inline-flex align-items-center">
+            <i className="fa-solid fa-circle fs-5 me-1" />
+            {status}
+          </span>
+        );
+    }
+  };
+
+  const getPaymentMethodLabel = (method: string) => {
+    switch (method) {
+      case "MPESA": return "M-Pesa";
+      case "EMOLA": return "E-Mola";
+      case "BANK": return "Banco";
+      default: return method;
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric'
+    });
+  };
 
   return (
     <>
@@ -101,300 +195,172 @@ const StudentOrder = () => {
               <div className="page-title d-flex align-items-center justify-content-between">
                 <h5>Histórico de Pedidos</h5>
               </div>
-              <div className="row">
-                <div className="col-md-8">
-                  <div className="mb-3">
-                    <div className="dropdown">
-                      <Link
-                        to="#"
-                        className="dropdown-toggle btn rounded border d-inline-flex align-items-center"
-                        data-bs-toggle="dropdown"
-                        aria-expanded="false"
-                      >
-                        Status
-                      </Link>
-                      <ul className="dropdown-menu dropdown-menu-end p-3">
-                        <li>
-                          <Link to="#" className="dropdown-item rounded-1">
-                            Concluído
-                          </Link>
-                        </li>
-                        <li>
-                          <Link to="#" className="dropdown-item rounded-1">
-                            Pendente
-                          </Link>
-                        </li>
-                      </ul>
-                    </div>
+
+              {error && <div className="alert alert-danger">{error}</div>}
+
+              {loading ? (
+                <div className="text-center py-5">
+                  <div className="spinner-border text-primary" role="status">
+                    <span className="visually-hidden">Carregando...</span>
                   </div>
                 </div>
-                <div className="col-md-4">
-                  <div className="input-icon mb-3">
-                    <span className="input-icon-addon">
-                      <i className="isax isax-search-normal-14" />
-                    </span>
-                    <input
-                      type="email"
-                      className="form-control form-control-md"
-                      placeholder="Pesquisar"
-                    />
-                  </div>
+              ) : orders.length === 0 ? (
+                <div className="text-center py-5">
+                  <i className="fa fa-shopping-cart fa-3x text-muted mb-3"></i>
+                  <p className="text-muted">Você ainda não fez nenhum pedido</p>
+                  <Link to={route.courseGrid} className="btn btn-primary">
+                    Explorar Cursos
+                  </Link>
                 </div>
-              </div>
-              <div className="table-responsive custom-table">
-                <table className="table">
-                  <thead className="thead-light">
-                    <tr>
-                      <th>ID do Pedido</th>
-                      <th>Data</th>
-                      <th>Valor</th>
-                      <th>Status</th>
-                      <th />
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td>
-                        <Link
-                          to="#"
-                          className="text-primary"
-                          data-bs-toggle="modal"
-                          data-bs-target="#view_invoice"
-                        >
-                          #ORD010
-                        </Link>
-                      </td>
-                      <td>22 Ago 2025</td>
-                      <td>$160</td>
-                      <td>
-                        <span className="badge bg-success d-inline-flex align-items-center me-1">
-                          <i className="fa-solid fa-circle fs-5 me-1" />
-                          Concluído
-                        </span>
-                      </td>
-                      <td>
-                        <div className="d-flex align-items-center">
-                          <Link
-                            to="#"
-                            className="d-inline-flex fs-14 me-1 action-icon"
-                            data-bs-toggle="modal"
-                            data-bs-target="#view_invoice"
-                          >
-                            <i className="isax isax-eye" />
-                          </Link>
-                          <Link
-                            to="#"
-                            className="d-inline-flex fs-14 action-icon"
-                          >
-                            <i className="isax isax-import" />
-                          </Link>
-                        </div>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <Link
-                          to="#"
-                          className="text-primary"
-                          data-bs-toggle="modal"
-                          data-bs-target="#view_invoice"
-                        >
-                          #ORD009
-                        </Link>
-                      </td>
-                      <td>10 Ago 2025</td>
-                      <td>$180</td>
-                      <td>
-                        <span className="badge bg-info d-inline-flex align-items-center me-1">
-                          <i className="fa-solid fa-circle fs-5 me-1" />
-                          Pendente
-                        </span>
-                      </td>
-                      <td>
-                        <div className="d-flex align-items-center">
-                          <Link
-                            to="#"
-                            className="d-inline-flex fs-14 me-1 action-icon"
-                            data-bs-toggle="modal"
-                            data-bs-target="#view_invoice"
-                          >
-                            <i className="isax isax-eye" />
-                          </Link>
-                          <Link
-                            to="#"
-                            className="d-inline-flex fs-14 action-icon"
-                          >
-                            <i className="isax isax-import" />
-                          </Link>
-                        </div>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <Link
-                          to="#"
-                          className="text-primary"
-                          data-bs-toggle="modal"
-                          data-bs-target="#view_invoice"
-                        >
-                          #ORD008
-                        </Link>
-                      </td>
-                      <td>26 Jul 2025</td>
-                      <td>$200</td>
-                      <td>
-                        <span className="badge bg-success d-inline-flex align-items-center me-1">
-                          <i className="fa-solid fa-circle fs-5 me-1" />
-                          Concluído
-                        </span>
-                      </td>
-                      <td>
-                        <div className="d-flex align-items-center">
-                          <Link
-                            to="#"
-                            className="d-inline-flex fs-14 me-1 action-icon"
-                            data-bs-toggle="modal"
-                            data-bs-target="#view_invoice"
-                          >
-                            <i className="isax isax-eye" />
-                          </Link>
-                          <Link
-                            to="#"
-                            className="d-inline-flex fs-14 action-icon"
-                          >
-                            <i className="isax isax-import" />
-                          </Link>
-                        </div>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <Link
-                          to="#"
-                          className="text-primary"
-                          data-bs-toggle="modal"
-                          data-bs-target="#view_invoice"
-                        >
-                          #ORD007
-                        </Link>
-                      </td>
-                      <td>12 Jul 2025</td>
-                      <td>$220</td>
-                      <td>
-                        <span className="badge bg-success d-inline-flex align-items-center me-1">
-                          <i className="fa-solid fa-circle fs-5 me-1" />
-                          Concluído
-                        </span>
-                      </td>
-                      <td>
-                        <div className="d-flex align-items-center">
-                          <Link
-                            to="#"
-                            className="d-inline-flex fs-14 me-1 action-icon"
-                            data-bs-toggle="modal"
-                            data-bs-target="#view_invoice"
-                          >
-                            <i className="isax isax-eye" />
-                          </Link>
-                          <Link
-                            to="#"
-                            className="d-inline-flex fs-14 action-icon"
-                          >
-                            <i className="isax isax-import" />
-                          </Link>
-                        </div>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <Link
-                          to="#"
-                          className="text-primary"
-                          data-bs-toggle="modal"
-                          data-bs-target="#view_invoice"
-                        >
-                          #ORD006
-                        </Link>
-                      </td>
-                      <td>02 Jul 2025</td>
-                      <td>$170</td>
-                      <td>
-                        <span className="badge bg-success d-inline-flex align-items-center me-1">
-                          <i className="fa-solid fa-circle fs-5 me-1" />
-                          Concluído
-                        </span>
-                      </td>
-                      <td>
-                        <div className="d-flex align-items-center">
-                          <Link
-                            to="#"
-                            className="d-inline-flex fs-14 me-1 action-icon"
-                            data-bs-toggle="modal"
-                            data-bs-target="#view_invoice"
-                          >
-                            <i className="isax isax-eye" />
-                          </Link>
-                          <Link
-                            to="#"
-                            className="d-inline-flex fs-14 action-icon"
-                          >
-                            <i className="isax isax-import" />
-                          </Link>
-                        </div>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <Link
-                          to="#"
-                          className="text-primary"
-                          data-bs-toggle="modal"
-                          data-bs-target="#view_invoice"
-                        >
-                          #ORD005
-                        </Link>
-                      </td>
-                      <td>25 Jun 2025</td>
-                      <td>$150</td>
-                      <td>
-                        <span className="badge bg-success d-inline-flex align-items-center me-1">
-                          <i className="fa-solid fa-circle fs-5 me-1" />
-                          Concluído
-                        </span>
-                      </td>
-                      <td>
-                        <div className="d-flex align-items-center">
-                          <Link
-                            to="#"
-                            className="d-inline-flex fs-14 me-1 action-icon"
-                            data-bs-toggle="modal"
-                            data-bs-target="#view_invoice"
-                          >
-                            <i className="isax isax-eye" />
-                          </Link>
-                          <Link
-                            to="#"
-                            className="d-inline-flex fs-14 action-icon"
-                          >
-                            <i className="isax isax-import" />
-                          </Link>
-                        </div>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
+              ) : (
+                <div className="table-responsive custom-table">
+                  <table className="table">
+                    <thead className="thead-light">
+                      <tr>
+                        <th>Curso</th>
+                        <th>Data</th>
+                        <th>Valor</th>
+                        <th>Método</th>
+                        <th>Status</th>
+                        <th>Ações</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {orders.map((order) => (
+                        <tr key={order.id}>
+                          <td>
+                            <div className="d-flex align-items-center">
+                              {order.courseThumbnail ? (
+                                <img
+                                  src={order.courseThumbnail}
+                                  alt={order.courseTitle}
+                                  className="rounded me-2"
+                                  style={{ width: 50, height: 35, objectFit: "cover" }}
+                                />
+                              ) : (
+                                <div className="bg-light rounded me-2 d-flex align-items-center justify-content-center" style={{ width: 50, height: 35 }}>
+                                  <i className="fa fa-image text-muted"></i>
+                                </div>
+                              )}
+                              <span className="text-truncate" style={{ maxWidth: 150 }}>
+                                {order.courseTitle}
+                              </span>
+                            </div>
+                          </td>
+                          <td>{formatDate(order.orderDate)}</td>
+                          <td>{order.amount?.toFixed(2)} MT</td>
+                          <td>{getPaymentMethodLabel(order.paymentMethod)}</td>
+                          <td>{getStatusBadge(order.status)}</td>
+                          <td>
+                            <div className="d-flex align-items-center gap-2">
+                              <button
+                                className="btn btn-sm btn-outline-primary"
+                                onClick={() => setSelectedOrder(order)}
+                                data-bs-toggle="modal"
+                                data-bs-target="#view_invoice"
+                              >
+                                <i className="isax isax-eye" />
+                              </button>
+                              {order.status === "PENDING" && (
+                                <button
+                                  className="btn btn-sm btn-primary"
+                                  onClick={() => setUploadModal({ orderId: order.id, show: true })}
+                                >
+                                  <i className="fa fa-upload" />
+                                </button>
+                              )}
+                              {order.status === "APPROVED" && (
+                                <Link
+                                  to={`/course-watch?id=${order.courseId}`}
+                                  className="btn btn-sm btn-success"
+                                >
+                                  <i className="fa fa-play" />
+                                </Link>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           </div>
         </div>
       </div>
+
+      {/* Upload Modal */}
+      {uploadModal.show && (
+        <div className="modal fade show d-block" style={{ backgroundColor: "rgba(0,0,0,0.5)" }}>
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">Enviar Comprovativo de Pagamento</h5>
+                <button
+                  type="button"
+                  className="btn-close"
+                  onClick={() => {
+                    setUploadModal({ orderId: 0, show: false });
+                    setSelectedFile(null);
+                    setPreviewUrl(null);
+                  }}
+                ></button>
+              </div>
+              <div className="modal-body">
+                <div className="mb-3">
+                  <label className="form-label">Selecione a imagem do comprovativo</label>
+                  <input
+                    type="file"
+                    className="form-control"
+                    accept="image/*"
+                    onChange={handleFileSelect}
+                    ref={fileInputRef}
+                  />
+                </div>
+                {previewUrl && (
+                  <div className="text-center">
+                    <img
+                      src={previewUrl}
+                      alt="Preview"
+                      style={{ maxWidth: "100%", maxHeight: 300 }}
+                      className="rounded"
+                    />
+                  </div>
+                )}
+              </div>
+              <div className="modal-footer">
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => {
+                    setUploadModal({ orderId: 0, show: false });
+                    setSelectedFile(null);
+                    setPreviewUrl(null);
+                  }}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={handleUpload}
+                  disabled={!selectedFile || loading}
+                >
+                  {loading ? "Enviando..." : "Enviar"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* View Invoice */}
       <div className="modal fade" id="view_invoice">
         <div className="modal-dialog modal-dialog-centered modal-lg">
           <div className="modal-content">
             <div className="modal-header">
-              <h5>Fatura</h5>
+              <h5>Detalhes do Pedido</h5>
               <button
                 type="button"
                 className="btn-close custom-btn-close"
@@ -405,166 +371,84 @@ const StudentOrder = () => {
               </button>
             </div>
             <div className="modal-body">
-              <div className="border-bottom mb-3">
-                <div className="row justify-content-between align-items-center flex-wrap row-gap-4">
-                  <div className="col-md-6">
-                    <div className="mb-2 invoice-logo-white">
-                      <ImageWithBasePath
-                        src="assets/img/logo.png"
-                        className="img-fluid"
-                        alt="logo"
-                      />
-                    </div>
-                    <p className="mb-2">
-                      3099 Kennedy Court Framingham, MA 01702
-                    </p>
-                  </div>
-                  <div className="col-md-6">
-                    <div className=" text-end mb-3">
-                      <h6 className="text-default mb-1 text-secondary fs-16">
-                        #OI0010
-                      </h6>
-                      <p className="mb-1">
-                        Data de Criação :{" "}
-                        <span className="text-gray-9">25 Ago, 2025</span>{" "}
-                      </p>
-                      <p>
-                        Data de Vencimento :{" "}
-                        <span className="text-gray-9">30 Ago, 2025</span>{" "}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div className="border-bottom mb-3">
-                <div className="row g-4">
-                  <div className="col-lg-5">
-                    <span className="mb-3 d-flex">De</span>
-                    <div>
-                      <h6 className="mb-2 fs-16">Thomas Lawler</h6>
-                      <p className="fs-14 mb-1">
-                        2077 Chicago Avenue Orosi, CA 93647
-                      </p>
-                      <p className="fs-14 mb-1">
-                        Email : thomaslawler@example.com
-                      </p>
-                      <p className="fs-14">Telefone : +1 987 654 3210</p>
-                    </div>
-                  </div>
-                  <div className="col-lg-5">
-                    <span className="mb-3 d-flex">Para</span>
-                    <div>
-                      <h6 className="mb-2">{getUserName()}</h6>
-                      <p className="fs-14 mb-1">
-                        3103 Trainer Avenue Peoria, IL 61602
-                      </p>
-                      <p className="fs-14 mb-1">
-                        Email : <Link to="#">{userData.email}</Link>
-                      </p>
-                      <p className="fs-14">
-                        Telefone : <Link to="#">+1 987 471 6589</Link>
-                      </p>
-                    </div>
-                  </div>
-                  <div className="col-lg-2">
-                    <div className="mb-3 text-end">
-                      <span className="mb-1 d-block">Status do Pagamento</span>
-                      <span className="badge bg-success badge-sm d-inline-flex align-items-center fs-10 fw-normal mb-4">
-                        <i className="fa-solid fa-circle fs-5 me-1" />
-                        Concluído
-                      </span>
-                      <div>
-                        <ImageWithBasePath
-                          src="assets/img/icon/qr.svg"
-                          className="img-fluid"
-                          alt="QR"
-                        />
+              {selectedOrder && (
+                <>
+                  <div className="border-bottom mb-3 pb-3">
+                    <div className="row">
+                      <div className="col-md-6">
+                        <h6 className="mb-2">Pedido #{selectedOrder.id}</h6>
+                        <p className="mb-1">
+                          <strong>Data:</strong> {formatDate(selectedOrder.orderDate)}
+                        </p>
+                        <p className="mb-1">
+                          <strong>Status:</strong> {getStatusBadge(selectedOrder.status)}
+                        </p>
+                      </div>
+                      <div className="col-md-6 text-end">
+                        <h4 className="text-primary">{selectedOrder.amount?.toFixed(2)} MT</h4>
+                        <p className="text-muted">{getPaymentMethodLabel(selectedOrder.paymentMethod)}</p>
                       </div>
                     </div>
                   </div>
-                </div>
-              </div>
-              <div>
-                <div className="table-responsive custom-table rounded-0">
-                  <table className="table">
-                    <thead className="thead-light">
-                      <tr>
-                        <th className="w-50">Descrição</th>
-                        <th className="text-center">Qtd</th>
-                        <th className="text-end">Custo</th>
-                        <th className="text-end">Desconto</th>
-                        <th className="text-end">Total</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr>
-                        <td>
-                          <p className="text-gray-9">
-                            Informações sobre Curso de UI/UX Design
-                          </p>
-                        </td>
-                        <td className="text-gray text-center">1</td>
-                        <td className="text-gray text-end">$120</td>
-                        <td className="text-gray text-end">$0</td>
-                        <td className="text-gray text-end">$120</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-              <div className="border-bottom mb-3 pb-3">
-                <div className="row">
-                  <div className="col-md-6" />
-                  <div className="col-md-6">
-                    <div className="d-flex justify-content-between align-items-center border-bottom my-2 pb-2 pe-3">
-                      <p className="text-gray mb-0">Subtotal</p>
-                      <p className="text-gray-9 fw-medium">$120</p>
+
+                  <div className="border-bottom mb-3 pb-3">
+                    <h6 className="mb-3">Curso</h6>
+                    <div className="d-flex align-items-center">
+                      {selectedOrder.courseThumbnail ? (
+                        <img
+                          src={selectedOrder.courseThumbnail}
+                          alt={selectedOrder.courseTitle}
+                          className="rounded me-3"
+                          style={{ width: 80, height: 60, objectFit: "cover" }}
+                        />
+                      ) : (
+                        <div className="bg-light rounded me-3 d-flex align-items-center justify-content-center" style={{ width: 80, height: 60 }}>
+                          <i className="fa fa-image text-muted"></i>
+                        </div>
+                      )}
+                      <div>
+                        <h6 className="mb-1">{selectedOrder.courseTitle}</h6>
+                        <p className="text-muted mb-0">ID: {selectedOrder.courseId}</p>
+                      </div>
                     </div>
-                    <div className="d-flex justify-content-between align-items-center border-bottom my-2 pb-2 pe-3">
-                      <p className="mb-0">Desconto (0%)</p>
-                      <p className="text-gray-9 fs-14 fw-medium">$0</p>
-                    </div>
-                    <div className="d-flex justify-content-between align-items-center mb-3 pe-3">
-                      <p className="mb-0">IVA (5%)</p>
-                      <p className="text-gray-9 fs-14 fw-medium mb-2">$0</p>
-                    </div>
-                    <div className="d-flex justify-content-between align-items-center mb-2 pe-3">
-                      <h6 className="fs-16">Valor Total</h6>
-                      <h6 className="fs-16">$120</h6>
-                    </div>
-                    <p>Valor por Extenso : Dólar Cento e Vinte</p>
                   </div>
-                </div>
-              </div>
-              <div className="row align-items-center gy-3">
-                <div className="col-lg-9">
-                  <div className="mb-3">
-                    <h6 className="mb-1 fs-15">Notas</h6>
-                    <p>
-                      Fatura para compra de curso, cobrindo taxa do curso, descontos e impostos aplicáveis.
+
+                  {selectedOrder.selectedWallet && (
+                    <div className="border-bottom mb-3 pb-3">
+                      <h6 className="mb-3">Dados para Pagamento</h6>
+                      <p className="mb-1"><strong>Nome:</strong> {selectedOrder.selectedWallet.accountName}</p>
+                      <p className="mb-1"><strong>Número:</strong> {selectedOrder.selectedWallet.accountNumber}</p>
+                      {selectedOrder.selectedWallet.bankName && (
+                        <p className="mb-1"><strong>Banco:</strong> {selectedOrder.selectedWallet.bankName}</p>
+                      )}
+                    </div>
+                  )}
+
+                  {selectedOrder.proofOfPaymentUrl && (
+                    <div className="border-bottom mb-3 pb-3">
+                      <h6 className="mb-3">Comprovativo de Pagamento</h6>
+                      <img
+                        src={selectedOrder.proofOfPaymentUrl}
+                        alt="Comprovativo"
+                        className="img-fluid rounded"
+                        style={{ maxHeight: 200 }}
+                      />
+                    </div>
+                  )}
+
+                  {selectedOrder.rejectionReason && (
+                    <div className="alert alert-danger">
+                      <strong>Motivo da Rejeição:</strong> {selectedOrder.rejectionReason}
+                    </div>
+                  )}
+
+                  {selectedOrder.validatedDate && (
+                    <p className="text-muted">
+                      <strong>Data de Validação:</strong> {formatDate(selectedOrder.validatedDate)}
                     </p>
-                  </div>
-                  <div>
-                    <h6 className="mb-1 fs-16">Termos e Condições</h6>
-                    <p>
-                      O pagamento integral concede acesso não transferível ao curso, sujeito à política de reembolso do provedor.
-                    </p>
-                  </div>
-                </div>
-                <div className="col-md-3">
-                  <div className="text-end pe-4 mb-2">
-                    <ImageWithBasePath
-                      src="assets/img/icons/sign.svg"
-                      className="img-fluid"
-                      alt="sign"
-                    />
-                  </div>
-                  <div className="text-end">
-                    <h6 className="fs-15 pe-3 mb-2">Ted M. Davis</h6>
-                    <p>Gerente Assistente</p>
-                  </div>
-                </div>
-              </div>
+                  )}
+                </>
+              )}
             </div>
           </div>
         </div>

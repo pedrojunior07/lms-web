@@ -798,19 +798,16 @@ const CourseDetails = () => {
 
                     <div className="d-sm-flex align-items-center justify-content-sm-between mt-3">
                       <div className="d-flex align-items-center">
-                        <div className="avatar avatar-lg">
-                          <img
-                            className="rounded-circle"
-                            src="./assets/img/avatar/avatar10.jpg"
-                            alt="instrutor"
-                          />
+                        <div className="avatar avatar-lg bg-primary rounded-circle d-flex align-items-center justify-content-center">
+                          <span className="text-white fs-18 fw-bold">
+                            {course?.instructor?.firstName?.charAt(0) ?? ""}
+                            {course?.instructor?.lastName?.charAt(0) ?? ""}
+                          </span>
                         </div>
                         <div className="ms-2">
                           <h5 className="fs-18 fw-semibold text-white">
-                            <Link to={route.instructorDetails} className="text-white">
-                              {course?.instructor?.firstName ?? "N/A"}{" "}
-                              {course?.instructor?.lastName ?? "N/A"}
-                            </Link>
+                            {course?.instructor?.firstName ?? "N/A"}{" "}
+                            {course?.instructor?.lastName ?? "N/A"}
                           </h5>
                           <p className="fs-14 mb-0 text-white-50">Instrutor</p>
                         </div>
@@ -931,30 +928,18 @@ const CourseDetails = () => {
                             >
                               <div className="accordion-body p-0">
                                 {module.lessons.map((lesson, lIndex) => (
-                                  <div className="lesson-item p-4" key={lesson.id}>
-                                    <div className="row align-items-center">
-                                      <div className="col-md-8">
-                                        <div className="d-flex align-items-start mb-3">
-                                          <span className="badge bg-light text-dark me-3 mt-1">
-                                            {mIndex + 1}.{lIndex + 1}
-                                          </span>
-                                          <div className="flex-grow-1">
-                                            <h6 className="mb-3">{lesson.title}</h6>
-                                            {renderContentPreview(lesson.content, lesson.title)}
-                                          </div>
-                                        </div>
+                                  <div className="lesson-item p-3" key={lesson.id}>
+                                    <div className="d-flex align-items-center">
+                                      <span className="badge bg-light text-dark me-3">
+                                        {mIndex + 1}.{lIndex + 1}
+                                      </span>
+                                      <div className="flex-grow-1">
+                                        <span className="fs-14">{lesson.title}</span>
                                       </div>
-                                      <div className="col-md-4 text-md-end mt-3 mt-md-0">
-                                        <a
-                                          href={lesson.content}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
-                                          className="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-2"
-                                        >
-                                          <ExternalLink size={16} />
-                                          Acessar Conteúdo
-                                        </a>
-                                      </div>
+                                      <span className="badge bg-secondary ms-2">
+                                        <i className="fa fa-lock me-1"></i>
+                                        Bloqueado
+                                      </span>
                                     </div>
                                   </div>
                                 ))}
