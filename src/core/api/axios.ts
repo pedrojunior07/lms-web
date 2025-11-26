@@ -1,8 +1,10 @@
 import axios from "axios";
 
-// API configurada para localhost
+// API configurada para produção
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://102.211.186.111:8085/e-learning/api";
+
 const api = axios.create({
-  baseURL: "http://localhost:8085/e-learning/api",
+  baseURL: API_BASE_URL,
   headers: {
     "Content-Type": "application/json",
   },
@@ -17,7 +19,7 @@ api.interceptors.request.use((config) => {
 });
 
 const apiMultipart = axios.create({
-  baseURL: "http://localhost:8085/e-learning/api",
+  baseURL: API_BASE_URL,
 });
 
 apiMultipart.interceptors.request.use((config) => {

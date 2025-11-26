@@ -9,12 +9,14 @@ import { useCourseApi } from "../../../core/api/hooks/useCourseApi";
 import { useCart } from "../../../core/common/context/cartContext";
 import { toast } from "react-toastify";
 import { useAuth } from "../../../core/common/context/AuthContextType";
+import { useEnrollments } from "../../../core/common/context/enrollmentContext";
 
 const CourseGrid = () => {
   const [selectedItems, setSelectedItems] = useState<Record<number, boolean>>({});
   const [categories, setCategories] = useState<any[]>([]);
   const { addToCart } = useCart();
   const { isAuthenticated } = useAuth();
+  const { isEnrolled } = useEnrollments();
   const navigate = useNavigate();
 
   const handleItemClick = (id: number) => {
@@ -86,6 +88,10 @@ const CourseGrid = () => {
 
   const handleAddToCart = (e: React.MouseEvent, course: any) => {
     e.preventDefault();
+    if (isEnrolled(course.id)) {
+      toast.info("Voce ja esta inscrito neste curso.");
+      return;
+    }
     addToCart(course);
     toast.success(`${course.title} adicionado ao carrinho!`, {
       position: "top-right",
@@ -370,80 +376,94 @@ const CourseGrid = () => {
               </div>
               {/* /Filter */}
               <div className="row">
-                {courses.map((course, index) => (
-                  <div className="col-xl-4 col-md-6" key={course.id ?? index}>
-                    <div className="course-item-two course-item mx-0">
-                      <div className="course-img">
-                        <Link to={`${all_routes.courseDetails}/${course.id}`}>
-                          <img
-                            src={course.thumbnailUrl}
-                            alt={course.title}
-                            className="img-fluid"
-                          />
-                        </Link>
-                        <div className="position-absolute start-0 top-0 d-flex align-items-start w-100 z-index-2 p-3">
-                          {course.price > 0 && (
-                            <div className="badge text-bg-danger">15% off</div>
-                          )}
-                          <Link 
-                            to="#" 
-                            className={`fav-icon ms-auto ${selectedItems[index] ? 'selected' : ''}`}
-                            onClick={(e) => {
-                              e.preventDefault();
-                              handleItemClick(index);
-                            }}
-                          >
-                            <i className="isax isax-heart" />
-                          </Link>
-                        </div>
-                      </div>
-                      <div className="course-content">
-                        <div className="d-flex justify-content-between mb-2">
-                          <div className="d-flex align-items-center">
-                            <div className="avatar avatar-sm">
-                              <img
-                                src="./assets/img/user/user-29.jpg"
-                                alt={course.instructorName}
-                                className="img-fluid avatar avatar-sm rounded-circle"
-                              />
-                            </div>
-                            <div className="ms-2">
-                              <span className="link-default fs-14">
-                                {course.instructorName}
-                              </span>
-                            </div>
-                          </div>
-                          <span className="badge badge-light rounded-pill bg-light d-inline-flex align-items-center fs-13 fw-medium mb-0">
-                            {course.category?.name ?? "Sem Categoria"}
-                          </span>
-                        </div>
-                        <h6 className="title mb-2">
+                {courses.map((course, index) => {
+                  const alreadyEnrolled = isEnrolled(course.id);
+
+                  return (
+                    <div className="col-xl-4 col-md-6" key={course.id ?? index}>
+                      <div className="course-item-two course-item mx-0">
+                        <div className="course-img">
                           <Link to={`${all_routes.courseDetails}/${course.id}`}>
-                            {course.title}
+                            <img
+                              src={course.thumbnailUrl}
+                              alt={course.title}
+                              className="img-fluid"
+                            />
                           </Link>
-                        </h6>
-                        <p className="d-flex align-items-center mb-3">
-                          <i className="fa-solid fa-star text-warning me-2" />
-                          {course.ratingText ?? "Sem avaliação"}
-                        </p>
-                        <div className="d-flex align-items-center justify-content-between">
-                          <h5 className="text-secondary mb-0">
-                            {course.price > 0 
-                              ? `MZN${course.price.toFixed(2)}` 
-                              : "Gratuito"}
-                          </h5>
-                          <button
-                            className="btn btn-dark btn-sm d-inline-flex align-items-center"
-                            onClick={(e: React.MouseEvent<HTMLButtonElement>) => handleAddToCart(e, course)}
-                          >
-                           Adicionar ao Carrinho
-                            <i className="isax isax-arrow-right-3 ms-1" />
-                          </button>
+                          <div className="position-absolute start-0 top-0 d-flex align-items-start w-100 z-index-2 p-3">
+                            {course.price > 0 && (
+                              <div className="badge text-bg-danger">15% off</div>
+                            )}
+                            <Link 
+                              to="#" 
+                              className={`fav-icon ms-auto ${selectedItems[index] ? 'selected' : ''}`}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                handleItemClick(index);
+                              }}
+                            >
+                              <i className="isax isax-heart" />
+                            </Link>
+                          </div>
+                        </div>
+                        <div className="course-content">
+                          <div className="d-flex justify-content-between mb-2">
+                            <div className="d-flex align-items-center">
+                              <div className="avatar avatar-sm">
+                                <img
+                                  src="./assets/img/user/user-29.jpg"
+                                  alt={course.instructorName}
+                                  className="img-fluid avatar avatar-sm rounded-circle"
+                                />
+                              </div>
+                              <div className="ms-2">
+                                <span className="link-default fs-14">
+                                  {course.instructorName}
+                                </span>
+                              </div>
+                            </div>
+                            <span className="badge badge-light rounded-pill bg-light d-inline-flex align-items-center fs-13 fw-medium mb-0">
+                              {course.category?.name ?? "Sem Categoria"}
+                            </span>
+                          </div>
+                          <h6 className="title mb-2">
+                            <Link to={`${all_routes.courseDetails}/${course.id}`}>
+                              {course.title}
+                            </Link>
+                          </h6>
+                          <p className="d-flex align-items-center mb-3">
+                            <i className="fa-solid fa-star text-warning me-2" />
+                            {course.ratingText ?? "Sem avaliacao"}
+                          </p>
+                          <div className="d-flex align-items-center justify-content-between">
+                            <h5 className="text-secondary mb-0">
+                              {course.price > 0 
+                                ? `MZN${course.price.toFixed(2)}` 
+                                : "Gratuito"}
+                            </h5>
+                            {alreadyEnrolled ? (
+                              <Link
+                                to={`${all_routes.courseWatch}?id=${course.id}`}
+                                className="btn btn-outline-secondary btn-sm d-inline-flex align-items-center"
+                              >
+                                <i className="fa-solid fa-play me-2" />
+                                Ver Curso
+                              </Link>
+                            ) : (
+                              <button
+                                className="btn btn-dark btn-sm d-inline-flex align-items-center"
+                                onClick={(e: React.MouseEvent<HTMLButtonElement>) => handleAddToCart(e, course)}
+                              >
+                               Adicionar ao Carrinho
+                                <i className="isax isax-arrow-right-3 ms-1" />
+                              </button>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
               
               {/* Paginação */}

@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react";
-import Breadcrumb from "../../../core/common/Breadcrumb/breadcrumb";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { ApexOptions } from "apexcharts";
 import ProfileCard from "../common/profileCard";
 import InstructorSidebar from "../common/instructorSidebar";
 import { Link, useLocation } from "react-router-dom";
@@ -8,42 +8,165 @@ import PredefinedDateRanges from "../../../core/common/range-picker/datePicker";
 import ReactApexChart from "react-apexcharts";
 import ImageWithBasePath from "../../../core/common/imageWithBasePath";
 import DashboardHeader from "./DashboardHeader";
-import { usePerson } from "../../../core/api/hooks/useUserApi";
 import { useCourseApi } from "../../../core/api/hooks/useCourseApi";
+
+const MONTH_LABELS = [
+  "Jan",
+  "Fev",
+  "Mar",
+  "Abr",
+  "Mai",
+  "Jun",
+  "Jul",
+  "Ago",
+  "Set",
+  "Out",
+  "Nov",
+  "Dez",
+];
+
+type DashboardTotals = {
+  enrollments: number;
+  active: number;
+  completed: number;
+  totalStudents: number;
+  totalCourses: number;
+  totalRevenue: number;
+};
+
+const ACTIVE_STATUSES = ["ACTIVE", "PUBLISHED", "LIVE", "APPROVED"];
+const COMPLETED_STATUSES = ["COMPLETED", "FINISHED", "ARCHIVED"];
+
+const buildMonthlyArray = () => Array.from({ length: 12 }, () => 0);
+
+const sanitizeText = (value?: string) => (value ? String(value) : "").trim();
+
+const getNumericValue = (value: any) => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+};
+
+const calculateDashboardData = (
+  courses: any[],
+  stats: any
+): { totals: DashboardTotals; monthly: number[] } => {
+  const monthly = buildMonthlyArray();
+
+  if (!courses || courses.length === 0) {
+    return {
+      totals: {
+        enrollments: getNumericValue(stats?.enrollments),
+        active: getNumericValue(stats?.published),
+        completed: getNumericValue(stats?.completed),
+        totalStudents: getNumericValue(stats?.students ?? stats?.enrollments),
+        totalCourses: getNumericValue(stats?.total),
+        totalRevenue: getNumericValue(stats?.revenue),
+      },
+      monthly,
+    };
+  }
+
+  let totalStudents = 0;
+  let totalRevenue = 0;
+  let computedActive = 0;
+  let completedCount = 0;
+
+  courses.forEach((course) => {
+    const students = getNumericValue(
+      course?.studentsCount ??
+        course?.studentCount ??
+        course?.totalStudents ??
+        course?.enrollments ??
+        0
+    );
+    totalStudents += students;
+
+    const price = getNumericValue(
+      course?.price ??
+        course?.pricing?.price ??
+        course?.amount ??
+        course?.salePrice ??
+        0
+    );
+
+    const revenue = getNumericValue(
+      course?.totalRevenue ??
+        course?.earnings ??
+        course?.revenue ??
+        students * price
+    );
+    totalRevenue += revenue;
+
+    const status = sanitizeText(course?.status).toUpperCase();
+    if (status && ACTIVE_STATUSES.includes(status)) {
+      computedActive += 1;
+    }
+    if (status && COMPLETED_STATUSES.includes(status)) {
+      completedCount += 1;
+    }
+
+    const timestamp =
+      course?.publishedAt ||
+      course?.updatedAt ||
+      course?.createdAt ||
+      course?.created_at;
+    if (timestamp) {
+      const parsedDate = new Date(timestamp);
+      if (!Number.isNaN(parsedDate.getTime())) {
+        monthly[parsedDate.getMonth()] += revenue;
+        return;
+      }
+    }
+    if (revenue > 0) {
+      monthly[new Date().getMonth()] += revenue;
+    }
+  });
+
+  return {
+    totals: {
+      enrollments: stats?.enrollments ?? totalStudents,
+      active: stats?.published ?? computedActive,
+      completed: stats?.completed ?? completedCount,
+      totalStudents,
+      totalCourses: stats?.total ?? courses.length,
+      totalRevenue,
+    },
+    monthly: monthly.map((value) => Number(value.toFixed(2))),
+  };
+};
+
 
 const InstructorDashboard = () => {
   const location = useLocation();
-  const cartCount = 3; // exemplo estático, substitua por seu estado real
-  const { getUser } = usePerson();
-  const { getCourseStats } = useCourseApi();
-  const [stats, setStats] = useState<any>(null);
-  const [instructorCourses, setInstructorCourses] = React.useState<any[]>([]);
-
-  const { listInstructorCourses } = useCourseApi();
+  const { getCourseStats, listInstructorCourses } = useCourseApi();
+  const getCourseStatsRef = useRef(getCourseStats);
+  const listInstructorCoursesRef = useRef(listInstructorCourses);
 
   useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        var id = localStorage.getItem("id");
-        const data = await listInstructorCourses({ instructorId: id });
-        setInstructorCourses(data.data.content || []);
+    getCourseStatsRef.current = getCourseStats;
+  }, [getCourseStats]);
 
-        console.log("Fetched instructor courses:", data.data.content);
-      } catch (error: any) {
-        console.error(
-          "Erro ao buscar categorias:",
-          error.response?.data || error.message
-        );
-      }
-    };
-
-    fetchCategories();
-  }, []);
-
-  const [toursChart] = useState<any>({
+  useEffect(() => {
+    listInstructorCoursesRef.current = listInstructorCourses;
+  }, [listInstructorCourses]);
+  const [stats, setStats] = useState<any>(null);
+  const [instructorCourses, setInstructorCourses] = React.useState<any[]>([]);
+  const [dashboardTotals, setDashboardTotals] = useState<DashboardTotals>({
+    enrollments: 0,
+    active: 0,
+    completed: 0,
+    totalStudents: 0,
+    totalCourses: 0,
+    totalRevenue: 0,
+  });
+  const [chartSeries, setChartSeries] = useState([{
+    name: "Ganhos",
+    data: buildMonthlyArray(),
+  }]);
+  const chartOptions: ApexOptions = useMemo(() => ({
     chart: {
       height: 290,
-      type: "bar",
+      type: "bar" as const,
       stacked: true,
       toolbar: {
         show: false,
@@ -68,27 +191,8 @@ const InstructorDashboard = () => {
         endingShape: "rounded",
       },
     },
-    series: [
-      {
-        name: "Ganhos",
-        data: [80, 100, 70, 110, 80, 90, 85, 85, 110, 30, 100, 90],
-      },
-    ],
     xaxis: {
-      categories: [
-        "Jan",
-        "Fev",
-        "Mar",
-        "Abr",
-        "Mai",
-        "Jun",
-        "Jul",
-        "Ago",
-        "Set",
-        "Out",
-        "Nov",
-        "Dez",
-      ],
+      categories: MONTH_LABELS,
       labels: {
         style: {
           colors: "#4D4D4D",
@@ -116,10 +220,10 @@ const InstructorDashboard = () => {
       enabled: false,
     },
     fill: {
-      type: "gradient",
+      type: "gradient" as const,
       gradient: {
         shade: "dark",
-        type: "linear",
+        type: "linear" as const,
         shadeIntensity: 0.35,
         gradientToColors: ["#392C7D"],
         inverseColors: false,
@@ -129,7 +233,76 @@ const InstructorDashboard = () => {
         angle: 90,
       },
     },
-  });
+  }), []);
+
+  const formatNumber = (value: number) =>
+    Number(value || 0).toLocaleString("pt-PT");
+  const formatCurrency = (value: number) =>
+    new Intl.NumberFormat("pt-MZ", {
+      style: "currency",
+      currency: "MZN",
+      maximumFractionDigits: 0,
+    }).format(Number(value || 0));
+
+
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchDashboardData = async () => {
+      try {
+        const instructorId = localStorage.getItem("id");
+        const [statsResponse, coursesResponse] = await Promise.all([
+          getCourseStatsRef
+            .current()
+            .catch((error) => {
+              console.error("Erro ao buscar estat?sticas dos cursos:", error);
+              return null;
+            }),
+          instructorId
+            ? listInstructorCoursesRef.current({ instructorId })
+            : Promise.resolve(null),
+        ]);
+
+        if (!isMounted) {
+          return;
+        }
+
+        if (statsResponse) {
+          setStats(statsResponse);
+        }
+
+        const courses =
+          coursesResponse?.data?.content ??
+          coursesResponse?.content ??
+          [];
+        setInstructorCourses(courses);
+      } catch (error: any) {
+        console.error(
+          "Erro ao carregar dados do painel do instrutor:",
+          error?.response?.data || error?.message || error
+        );
+        if (isMounted) {
+          setInstructorCourses([]);
+        }
+      }
+    };
+
+    fetchDashboardData();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    const { totals, monthly } = calculateDashboardData(
+      instructorCourses,
+      stats
+    );
+    setDashboardTotals(totals);
+    setChartSeries([{ name: "Ganhos", data: monthly }]);
+  }, [instructorCourses, stats]);
 
   function onHandleMobileMenu(): void {
     throw new Error("Função não implementada.");
@@ -159,7 +332,7 @@ const InstructorDashboard = () => {
                       </span>
                       <div>
                         <span className="d-block">Cursos Inscritos</span>
-                        <h4 className="fs-24 mt-1">0</h4>
+                        <h4 className="fs-24 mt-1">{formatNumber(dashboardTotals.enrollments)}</h4>
                       </div>
                     </div>
                   </div>
@@ -178,7 +351,7 @@ const InstructorDashboard = () => {
                       </span>
                       <div>
                         <span className="d-block">Cursos Ativos</span>
-                        <h4 className="fs-24 mt-1">0</h4>
+                        <h4 className="fs-24 mt-1">{formatNumber(dashboardTotals.active)}</h4>
                       </div>
                     </div>
                   </div>
@@ -196,8 +369,8 @@ const InstructorDashboard = () => {
                         />
                       </span>
                       <div>
-                        <span className="d-block">Cursos Concluídos</span>
-                        <h4 className="fs-24 mt-1">0</h4>
+                        <span className="d-block">Cursos Conclu?dos</span>
+                        <h4 className="fs-24 mt-1">{formatNumber(dashboardTotals.completed)}</h4>
                       </div>
                     </div>
                   </div>
@@ -216,7 +389,7 @@ const InstructorDashboard = () => {
                       </span>
                       <div>
                         <span className="d-block">Total de Alunos</span>
-                        <h4 className="fs-24 mt-1">0</h4>
+                        <h4 className="fs-24 mt-1">{formatNumber(dashboardTotals.totalStudents)}</h4>
                       </div>
                     </div>
                   </div>
@@ -235,7 +408,7 @@ const InstructorDashboard = () => {
                       </span>
                       <div>
                         <span className="d-block">Total de Cursos</span>
-                        <h4 className="fs-24 mt-1">0</h4>
+                        <h4 className="fs-24 mt-1">{formatNumber(dashboardTotals.totalCourses)}</h4>
                       </div>
                     </div>
                   </div>
@@ -254,7 +427,7 @@ const InstructorDashboard = () => {
                       </span>
                       <div>
                         <span className="d-block">Ganhos Totais</span>
-                        <h4 className="fs-24 mt-1">0</h4>
+                        <h4 className="fs-24 mt-1">{formatCurrency(dashboardTotals.totalRevenue)}</h4>
                       </div>
                     </div>
                   </div>
@@ -274,8 +447,8 @@ const InstructorDashboard = () => {
                   </div>
                 </div>
                 <ReactApexChart
-                  options={toursChart}
-                  series={toursChart.series}
+                  options={chartOptions}
+                  series={chartSeries}
                   type="bar"
                   height={290}
                 />
@@ -294,7 +467,7 @@ const InstructorDashboard = () => {
                 </thead>
                 <tbody>
                   {instructorCourses.slice(0, 5).map((course, index) => (
-                    <tr key={index}>
+                    <tr key={course?.id ?? index}>
                       <td>
                         <div className="course-title d-flex align-items-center">
                           <Link

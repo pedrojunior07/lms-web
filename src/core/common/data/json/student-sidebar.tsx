@@ -2,11 +2,6 @@ import { all_routes } from "../../../../feature-module/router/all_routes";
 
 export const studentSidebarData = [
     {
-        title: 'Painel',
-        icon: 'isax isax-grid-35',
-        route: all_routes.studentDashboard
-    },
-    {
         title: 'Meu Perfil',
         icon: 'fa-solid fa-user',
         route: all_routes.studentProfile

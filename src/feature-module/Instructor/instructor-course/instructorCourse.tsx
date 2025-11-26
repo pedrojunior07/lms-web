@@ -186,7 +186,7 @@ const InstructorCourse = () => {
                   <div className="card bg-success">
                     <div className="card-body">
                       <h6 className="fw-medium mb-1 text-white">
-                        Active Courses
+                        Cursos ativos
                       </h6>
                       <h4 className="fw-bold text-white">
                         {stats ? stats.published : "..."}
@@ -199,7 +199,7 @@ const InstructorCourse = () => {
                   <div className="card bg-secondary">
                     <div className="card-body">
                       <h6 className="fw-medium mb-1 text-white">
-                        Pending Courses
+                        Cursos pendentes
                       </h6>
                       <h4 className="fw-bold text-white">—</h4>{" "}
                       {/* API não retorna este status */}
@@ -211,7 +211,7 @@ const InstructorCourse = () => {
                   <div className="card bg-info">
                     <div className="card-body">
                       <h6 className="fw-medium mb-1 text-white">
-                        Draft Courses
+                        Rascunhos
                       </h6>
                       <h4 className="fw-bold text-white">
                         {stats ? stats.draft : "..."}
@@ -224,7 +224,7 @@ const InstructorCourse = () => {
                   <div className="card bg-skyblue">
                     <div className="card-body">
                       <h6 className="fw-medium mb-1 text-white">
-                        Free Courses
+                        Cursos gratuitos
                       </h6>
                       <h4 className="fw-bold text-white">
                         {stats ? stats.free : "..."}
@@ -237,7 +237,7 @@ const InstructorCourse = () => {
                   <div className="card bg-purple">
                     <div className="card-body">
                       <h6 className="fw-medium mb-1 text-white">
-                        Paid Courses
+                        Cursos pagos
                       </h6>
                       <h4 className="fw-bold text-white">
                         {stats ? stats.paid : "..."}

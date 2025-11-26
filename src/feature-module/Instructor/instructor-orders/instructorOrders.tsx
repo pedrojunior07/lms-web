@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import InstructorSidebar from "../common/instructorSidebar";
 import { useCourseOrders, OrderStatus } from "../../../core/api/hooks/useCourseOrders";
 
@@ -63,9 +63,29 @@ const InstructorOrders: React.FC = () => {
     }
   };
 
-  const filteredOrders = filter === "ALL"
-    ? orders
-    : orders.filter(o => o.status === filter);
+  const statusCounts = useMemo(() => {
+    const counts: Record<OrderStatus | "ALL", number> = {
+      ALL: orders.length,
+      PENDING: 0,
+      PROOF_UPLOADED: 0,
+      APPROVED: 0,
+      REJECTED: 0,
+    };
+
+    orders.forEach((order) => {
+      counts[order.status] += 1;
+    });
+
+    return counts;
+  }, [orders]);
+
+  const filteredOrders = useMemo(() => {
+    if (filter === "ALL") {
+      return orders;
+    }
+
+    return orders.filter((order) => order.status === filter);
+  }, [filter, orders]);
 
   return (
     <div className="page-wrapper">
@@ -90,25 +110,25 @@ const InstructorOrders: React.FC = () => {
                           className={`btn btn-sm ${filter === "ALL" ? "btn-primary" : "btn-outline-primary"}`}
                           onClick={() => setFilter("ALL")}
                         >
-                          Todos ({orders.length})
+                          Todos ({statusCounts.ALL})
                         </button>
                         <button
                           className={`btn btn-sm ${filter === "PROOF_UPLOADED" ? "btn-primary" : "btn-outline-primary"}`}
                           onClick={() => setFilter("PROOF_UPLOADED")}
                         >
-                          Aguardando ({orders.filter(o => o.status === "PROOF_UPLOADED").length})
+                          Aguardando ({statusCounts.PROOF_UPLOADED})
                         </button>
                         <button
                           className={`btn btn-sm ${filter === "PENDING" ? "btn-primary" : "btn-outline-primary"}`}
                           onClick={() => setFilter("PENDING")}
                         >
-                          Pendentes ({orders.filter(o => o.status === "PENDING").length})
+                          Pendentes ({statusCounts.PENDING})
                         </button>
                         <button
                           className={`btn btn-sm ${filter === "APPROVED" ? "btn-primary" : "btn-outline-primary"}`}
                           onClick={() => setFilter("APPROVED")}
                         >
-                          Aprovados ({orders.filter(o => o.status === "APPROVED").length})
+                          Aprovados ({statusCounts.APPROVED})
                         </button>
                       </div>
                     </div>

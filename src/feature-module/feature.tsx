@@ -30,6 +30,7 @@ const Feature = () => {
     "/instructor/instructor-earnings",
     "/instructor/instructor-payout",
     "/instructor/instructor-quiz-questions",
+    "/instructor/instructor-api-tester",
   ];
 
   const shouldHideHeader = hideHeaderPaths.includes(location.pathname);

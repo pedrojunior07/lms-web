@@ -192,7 +192,7 @@ const EcoRegister: React.FC<EcoRegisterProps> = ({ onRegister }) => {
     setLoading(true);
     try {
       const response = await axios.post(
-        "http://localhost:8085/e-learning/api/auth/register",
+        "http://102.211.186.111:8085/e-learning/api/auth/register",
         {
           role: formData.role,
           firstName: formData.firstName,

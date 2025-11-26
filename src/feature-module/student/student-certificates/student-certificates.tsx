@@ -4,6 +4,7 @@ import Breadcrumb from "../../../core/common/Breadcrumb/breadcrumb";
 import ImageWithBasePath from "../../../core/common/imageWithBasePath";
 import { Link } from "react-router-dom";
 import StudentSidebar from "../common/studentSidebar";
+import ProfileCard from "../common/profileCard";
 import html2canvas from "html2canvas";
 
 interface Certificate {
@@ -444,7 +445,7 @@ const StudentCertificates = () => {
         setLoading(true);
         console.log("🔍 Carregando certificados...");
         
-        const response = await fetch('http://localhost:8085/e-learning/api/certificates/my', {
+        const response = await fetch('http://102.211.186.111:8085/e-learning/api/certificates/my', {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -620,60 +621,7 @@ const StudentCertificates = () => {
 
       <div className="content">
         <div className="container">
-          {/* Profile */}
-          <div className="profile-card overflow-hidden bg-blue-gradient2 mb-5 p-5">
-            <div className="profile-card-bg">
-              <ImageWithBasePath
-                src="assets/img/bg/card-bg-01.png"
-                className="profile-card-bg-1"
-                alt=""
-              />
-            </div>
-            <div className="row align-items-center row-gap-3">
-              <div className="col-lg-6">
-                <div className="d-flex align-items-center">
-                  <span className="avatar avatar-xxl avatar-rounded me-3 border border-white border-2 position-relative">
-                    <ImageWithBasePath
-                      src="assets/img/user/user-02.jpg"
-                      alt=""
-                    />
-                    <span className="verify-tick">
-                      <i className="isax isax-verify5" />
-                    </span>
-                  </span>
-                  <div>
-                    <h5 className="mb-1 text-white d-inline-flex align-items-center">
-                      {certificates[0]?.student.firstName} {certificates[0]?.student.lastName}
-                      <Link
-                        to={route.studentProfile}
-                        className="link-light fs-16 ms-2"
-                      >
-                        <i className="isax isax-edit-2" />
-                      </Link>
-                    </h5>
-                    <p className="text-light">Estudante</p>
-                  </div>
-                </div>
-              </div>
-              <div className="col-lg-6">
-                <div className="d-flex align-items-center justify-content-lg-end flex-wrap gap-2">
-                  <Link
-                    to={route.courseList}
-                    className="btn btn-white rounded-pill me-3"
-                  >
-                    Explorar Cursos
-                  </Link>
-                  <Link
-                    to={route.studentDashboard}
-                    className="btn btn-secondary rounded-pill"
-                  >
-                    Meu Painel
-                  </Link>
-                </div>
-              </div>
-            </div>
-          </div>
-          {/* /Profile */}
+          <ProfileCard />
           
           <div className="row">
             {/* Sidebar */}

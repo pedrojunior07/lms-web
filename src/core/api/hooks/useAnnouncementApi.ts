@@ -11,10 +11,26 @@ export const useAnnouncementApi = () => {
     title: string;
     message: string;
     courseId: number;
+    status?: string;
   }) => {
     const res = await api.post("/announcements", payload);
     return res.data;
   };
 
-  return { listAnnouncements, createAnnouncement };
+  const updateAnnouncement = async (id: string, payload: {
+    title: string;
+    message: string;
+    courseId: number;
+    status?: string;
+  }) => {
+    const res = await api.put(`/announcements/${id}`, payload);
+    return res.data;
+  };
+
+  const deleteAnnouncement = async (id: string) => {
+    const res = await api.delete(`/announcements/${id}`);
+    return res.data;
+  };
+
+  return { listAnnouncements, createAnnouncement, updateAnnouncement, deleteAnnouncement };
 };

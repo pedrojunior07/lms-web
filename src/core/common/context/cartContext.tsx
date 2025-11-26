@@ -5,6 +5,8 @@ import React, {
   useEffect,
   ReactNode,
 } from "react";
+import { toast } from "react-toastify";
+import { useEnrollments } from "./enrollmentContext";
 
 // Define types
 interface Course {
@@ -45,6 +47,7 @@ interface CartProviderProps {
 
 export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const { isEnrolled } = useEnrollments();
 
   // Load cart from localStorage when component mounts
   useEffect(() => {
@@ -67,6 +70,11 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
   }, [cartItems]);
 
   const addToCart = (course: Course) => {
+    if (isEnrolled(course.id)) {
+      toast.info("Voce ja esta inscrito neste curso.");
+      return;
+    }
+
     setCartItems((prevItems) => {
       // Check if course is already in cart
       const existingItem = prevItems.find((item) => item.id === course.id);

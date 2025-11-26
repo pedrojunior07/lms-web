@@ -1,8 +1,6 @@
-import React, { useEffect, useState } from "react";
-import Breadcrumb from "../../../core/common/Breadcrumb/breadcrumb";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import CustomSelect from "../../../core/common/commonSelect";
-import { announcementsData } from "../../../core/common/data/json/announcementsData";
+import CustomSelect, { OptionType } from "../../../core/common/commonSelect";
 import Table from "../../../core/common/dataTable/index";
 import ProfileCard from "../common/profileCard";
 import InstructorSidebar from "../common/instructorSidebar";
@@ -10,112 +8,231 @@ import DashboardHeader from "../instructor-dashboard/DashboardHeader";
 import { useAnnouncementApi } from "../../../core/api/hooks/useAnnouncementApi";
 import { useCourseApi } from "../../../core/api/hooks/useCourseApi";
 
+const STATUS_OPTIONS: OptionType[] = [
+  { label: "Publicado", value: "1" },
+  { label: "Rascunho", value: "2" },
+];
+
 const InstructorAnnouncements = () => {
-  const data = announcementsData;
   const [announcements, setAnnouncements] = useState([]);
   const [formData, setFormData] = useState({
     title: "",
     message: "",
-    courseId: "",
+    courseId: null as OptionType | null,
+    status: null as OptionType | null,
   });
-  const { saveQuizz, listQuizzes, getCourseAll } = useCourseApi();
-  const [courses, setCourses] = useState<any[]>([]);
-  const { listAnnouncements, createAnnouncement } = useAnnouncementApi();
-  useEffect(() => {
-    const fetchAnnouncements = async () => {
-      const data = await listAnnouncements();
-      setAnnouncements(data);
-    };
-    fetchAnnouncements();
-  }, []);
+  const [editFormData, setEditFormData] = useState({
+    id: "",
+    title: "",
+    message: "",
+    courseId: null as OptionType | null,
+    status: null as OptionType | null,
+  });
+  const [selectedAnnouncement, setSelectedAnnouncement] = useState<any>(null);
+  const [announcementToDelete, setAnnouncementToDelete] = useState<any>(null);
+  const { getCourseAll } = useCourseApi();
+  const [courses, setCourses] = useState<OptionType[]>([]);
+  const { listAnnouncements, createAnnouncement, updateAnnouncement, deleteAnnouncement } = useAnnouncementApi();
 
- //const data = await getCourseAll();
   useEffect(() => {
-    const fetchAnnouncements = async () => {
-      const data = await listAnnouncements();
-      console.log("Fetched Announcements:", data);
-      setAnnouncements(data);
+    const fetchData = async () => {
+      try {
+        const [announcementsData, coursesData] = await Promise.all([
+          listAnnouncements(),
+          getCourseAll()
+        ]);
+        console.log("Fetched Announcements:", announcementsData);
+        console.log("Fetched Courses:", coursesData);
+        setAnnouncements(announcementsData);
+
+        // Formatar cursos para o CustomSelect
+        const formattedCourses = coursesData.map((course: any) => ({
+          label: course.name || course.title,
+          value: course.id
+        }));
+        setCourses(formattedCourses);
+      } catch (error) {
+        console.error("Erro ao carregar dados:", error);
+      }
     };
-    fetchAnnouncements();
+    fetchData();
   }, []);
-  const handleSubmit = async () => {
+  const handleEnviar = async () => {
     try {
+      if (!formData.title || !formData.courseId) {
+        alert("Por favor, preencha todos os campos obrigatórios!");
+        return;
+      }
+
       await createAnnouncement({
         title: formData.title,
         message: formData.message,
-        courseId: 1,
+        courseId: Number(formData.courseId.value),
+        status: formData.status?.label || "Publicado",
       });
 
-      console.log(formData);
       alert("Anúncio criado com sucesso!");
+
+      // Limpar formulário
+      setFormData({
+        title: "",
+        message: "",
+        courseId: null,
+        status: null,
+      });
+
       // Refetch
       const data = await listAnnouncements();
       setAnnouncements(data);
+
+      // Fechar modal
+      document.getElementById("add_announcement")?.querySelector('[data-bs-dismiss="modal"]')?.dispatchEvent(new Event('click'));
     } catch (err) {
       console.error("Erro ao criar anúncio:", err);
+      alert("Erro ao criar anúncio. Por favor, tente novamente.");
+    }
+  };
+
+  const handleEdit = (announcement: any) => {
+    // Encontrar o curso correspondente
+    const selectedCourse = courses.find(c => c.value === announcement.courseId);
+    // Encontrar o status correspondente
+    const selectedStatus = STATUS_OPTIONS.find(s => s.label === announcement.status);
+
+    setEditFormData({
+      id: announcement.id,
+      title: announcement.title,
+      message: announcement.message,
+      courseId: selectedCourse || null,
+      status: selectedStatus || null,
+    });
+  };
+
+  const handleSaveEdit = async () => {
+    try {
+      if (!editFormData.title || !editFormData.courseId) {
+        alert("Por favor, preencha todos os campos obrigatórios!");
+        return;
+      }
+
+      await updateAnnouncement(editFormData.id, {
+        title: editFormData.title,
+        message: editFormData.message,
+        courseId: Number(editFormData.courseId.value),
+        status: editFormData.status?.label || "Publicado",
+      });
+
+      alert("Anúncio atualizado com sucesso!");
+
+      // Refetch
+      const data = await listAnnouncements();
+      setAnnouncements(data);
+
+      // Fechar modal
+      document.getElementById("edit_announcement")?.querySelector('[data-bs-dismiss="modal"]')?.dispatchEvent(new Event('click'));
+    } catch (err) {
+      console.error("Erro ao atualizar anúncio:", err);
+      alert("Erro ao atualizar anúncio. Por favor, tente novamente.");
+    }
+  };
+
+  const handleView = (announcement: any) => {
+    setSelectedAnnouncement(announcement);
+  };
+
+  const handleDeleteConfirm = async () => {
+    try {
+      if (!announcementToDelete) return;
+
+      await deleteAnnouncement(announcementToDelete.id);
+
+      alert("Anúncio excluído com sucesso!");
+
+      // Refetch
+      const data = await listAnnouncements();
+      setAnnouncements(data);
+
+      setAnnouncementToDelete(null);
+
+      // Fechar modal
+      document.getElementById("delete_modal")?.querySelector('[data-bs-dismiss="modal"]')?.dispatchEvent(new Event('click'));
+    } catch (err) {
+      console.error("Erro ao excluir anúncio:", err);
+      alert("Erro ao excluir anúncio. Por favor, tente novamente.");
     }
   };
 
   const columns = [
     {
-      title: "Date",
+      title: "Data",
       dataIndex: "createdAt",
       sorter: (a: any, b: any) => a.Date.length - b.Date.length,
     },
     {
-      title: "Announcements",
-      dataIndex: "message",
+      title: "Anuncio",
+      dataIndex: "title",
       render: (text: string, record: any) => (
         <div>
           <h6 className="mb-1">
             <Link
               to="#"
+              onClick={() => handleView(record)}
               data-bs-toggle="modal"
               data-bs-target="#view_announcement"
             >
               {text}
             </Link>
           </h6>
-          <p>{record.AnnouncementsKey}</p>
+          <p>{record.message?.substring(0, 50)}{record.message?.length > 50 ? '...' : ''}</p>
         </div>
       ),
       sorter: (a: any, b: any) =>
-        a.Announcements.length - b.Announcements.length,
+        (a.title || "").localeCompare(b.title || ""),
     },
     {
-      title: "Status",
+      title: "Estado",
       dataIndex: "Status",
-      render: (text: string) => (
-        <span
-          className={`badge badge-sm ${
-            text === "Draft"
-              ? "bg-skyblue"
-              : text === "Pending"
-              ? "bg-info"
-              : "bg-success"
-          } d-inline-flex align-items-center me-1`}
-        >
-          <i className="fa-solid fa-circle fs-5 me-1" />
-          {text}
-        </span>
-      ),
+      render: (text: string) => {
+        const statusMap: Record<string, string> = {
+          Pendente: "Pendente",
+          Rascunho: "Rascunho",
+          Publicado: "Publicado",
+        };
+        return (
+          <span
+            className={`badge badge-sm ${
+              text === "Rascunho"
+                ? "bg-skyblue"
+                : text === "Pending"
+                ? "bg-info"
+                : "bg-success"
+            } d-inline-flex align-items-center me-1`}
+          >
+            <i className="fa-solid fa-circle fs-5 me-1" />
+            {statusMap[text] || text}
+          </span>
+        );
+      },
       sorter: (a: any, b: any) => a.Status.length - b.Status.length,
     },
     {
-      title: "Action",
+      title: "Ações",
       dataIndex: "",
-      render: () => (
+      render: (_: any, record: any) => (
         <div className="d-flex align-items-center">
-          <Link to="#" className="d-inline-flex fs-14 me-1 action-icon">
-            <i
-              className="isax isax-edit-2"
-              data-bs-toggle="modal"
-              data-bs-target="#edit_announcement"
-            ></i>
+          <Link
+            to="#"
+            className="d-inline-flex fs-14 me-1 action-icon"
+            onClick={() => handleEdit(record)}
+            data-bs-toggle="modal"
+            data-bs-target="#edit_announcement"
+          >
+            <i className="isax isax-edit-2"></i>
           </Link>
           <Link
             to="#"
             className="d-inline-flex fs-14 action-icon"
+            onClick={() => setAnnouncementToDelete(record)}
             data-bs-toggle="modal"
             data-bs-target="#delete_modal"
           >
@@ -125,10 +242,7 @@ const InstructorAnnouncements = () => {
       ),
     },
   ];
-  const Status = [
-    { label: "Published", value: "1" },
-    { label: "Draft", value: "2" },
-  ];
+
   return (
     <>
       <div className="layout-container">
@@ -140,7 +254,7 @@ const InstructorAnnouncements = () => {
             <ProfileCard />
             <div className="col-lg-9">
               <div className="page-title d-flex align-items-center justify-content-between">
-                <h5 className="fw-bold">Announcements</h5>
+                <h5 className="fw-bold">Anuncios</h5>
                 <div>
                   <Link
                     to="#"
@@ -149,7 +263,7 @@ const InstructorAnnouncements = () => {
                     data-bs-target="#add_announcement"
                   >
                     <i className="isax isax-add-circle me-1" />
-                    Add Announcement
+                    Adicionar anúncio
                   </Link>
                 </div>
               </div>
@@ -197,7 +311,7 @@ const InstructorAnnouncements = () => {
           <div className="modal-dialog modal-dialog-centered modal-lg">
             <div className="modal-content">
               <div className="modal-header">
-                <h5 className="fw-bold">Add New Announcement</h5>
+                <h5 className="fw-bold">Adicionar novo anuncio</h5>
                 <button
                   type="button"
                   className="btn-close custom-btn-close"
@@ -213,20 +327,23 @@ const InstructorAnnouncements = () => {
                     <div className="col-md-12">
                       <div className="mb-3">
                         <label className="form-label">
-                          Course <span className="text-danger"> *</span>
+                          Curso <span className="text-danger"> *</span>
                         </label>
-
                         <CustomSelect
                           className="select"
                           options={courses}
                           modal={true}
+                          value={formData.courseId || undefined}
+                          onChange={(value: OptionType) =>
+                            setFormData({ ...formData, courseId: value })
+                          }
                         />
                       </div>
                     </div>
                     <div className="col-md-12">
                       <div className="mb-3">
                         <label className="form-label">
-                          Announcement Title{" "}
+                          Titulo do anuncio{" "}
                           <span className="text-danger"> *</span>
                         </label>
                         <input
@@ -241,7 +358,7 @@ const InstructorAnnouncements = () => {
                     </div>
                     <div className="col-md-12">
                       <div className="mb-3">
-                        <label className="form-label">Description</label>
+                        <label className="form-label">Descrição</label>
                         <textarea
                           className="form-control"
                           value={formData.message}
@@ -261,8 +378,12 @@ const InstructorAnnouncements = () => {
                         </label>
                         <CustomSelect
                           className="select"
-                          options={Status}
+                          options={STATUS_OPTIONS}
                           modal={true}
+                          value={formData.status || undefined}
+                          onChange={(value: OptionType) =>
+                            setFormData({ ...formData, status: value })
+                          }
                         />
                       </div>
                     </div>
@@ -274,14 +395,14 @@ const InstructorAnnouncements = () => {
                     type="button"
                     data-bs-dismiss="modal"
                   >
-                    Cancel
+                    Cancelar
                   </button>
                   <button
                     className="btn btn-secondary rounded-pill"
                     type="button"
-                    onClick={handleSubmit}
+                    onClick={handleEnviar}
                   >
-                    Submit
+                    Enviar
                   </button>
                 </div>
               </form>
@@ -289,12 +410,12 @@ const InstructorAnnouncements = () => {
           </div>
         </div>
         {/* /Add Announcement */}
-        {/* Edit Announcement */}
+        {/* Editar anuncio */}
         <div className="modal fade" id="edit_announcement">
           <div className="modal-dialog modal-dialog-centered modal-lg">
             <div className="modal-content">
               <div className="modal-header">
-                <h5 className="fw-bold">Edit Announcement</h5>
+                <h5 className="fw-bold">Editar anuncio</h5>
                 <button
                   type="button"
                   className="btn-close custom-btn-close"
@@ -310,34 +431,43 @@ const InstructorAnnouncements = () => {
                     <div className="col-md-12">
                       <div className="mb-3">
                         <label className="form-label">
-                          Course <span className="text-danger"> *</span>
+                          Curso <span className="text-danger"> *</span>
                         </label>
                         <CustomSelect
                           className="select"
                           options={courses}
-                          defaultValue={courses[0]}
+                          value={editFormData.courseId || undefined}
+                          onChange={(value: OptionType) =>
+                            setEditFormData({ ...editFormData, courseId: value })
+                          }
                         />
                       </div>
                     </div>
                     <div className="col-md-12">
                       <div className="mb-3">
                         <label className="form-label">
-                          Announcement Title{" "}
+                          Titulo do anuncio{" "}
                           <span className="text-danger"> *</span>
                         </label>
                         <input
                           type="text"
                           className="form-control"
-                          defaultValue="Welcome to Introduction to Programming"
+                          value={editFormData.title}
+                          onChange={(e) =>
+                            setEditFormData({ ...editFormData, title: e.target.value })
+                          }
                         />
                       </div>
                     </div>
                     <div className="col-md-12">
                       <div className="mb-3">
-                        <label className="form-label">Description</label>
+                        <label className="form-label">Descrição</label>
                         <textarea
                           className="form-control"
-                          defaultValue={"Enter Description"}
+                          value={editFormData.message}
+                          onChange={(e) =>
+                            setEditFormData({ ...editFormData, message: e.target.value })
+                          }
                         />
                       </div>
                     </div>
@@ -348,8 +478,11 @@ const InstructorAnnouncements = () => {
                         </label>
                         <CustomSelect
                           className="select"
-                          options={Status}
-                          defaultValue={Status[0]}
+                          options={STATUS_OPTIONS}
+                          value={editFormData.status || undefined}
+                          onChange={(value: OptionType) =>
+                            setEditFormData({ ...editFormData, status: value })
+                          }
                         />
                       </div>
                     </div>
@@ -361,27 +494,27 @@ const InstructorAnnouncements = () => {
                     type="button"
                     data-bs-dismiss="modal"
                   >
-                    Cancel
+                    Cancelar
                   </button>
                   <button
                     className="btn btn-secondary rounded-pill"
                     type="button"
-                    data-bs-dismiss="modal"
+                    onClick={handleSaveEdit}
                   >
-                    Save Changes
+                    Salvar Alterações
                   </button>
                 </div>
               </form>
             </div>
           </div>
         </div>
-        {/* /Edit Announcement */}
-        {/* Announcement Details */}
+        {/* /Editar anuncio */}
+        {/* Detalhes do anuncio */}
         <div className="modal fade" id="view_announcement">
           <div className="modal-dialog modal-dialog-centered modal-lg">
             <div className="modal-content">
               <div className="modal-header">
-                <h5 className="fw-bold">Announcement Details</h5>
+                <h5 className="fw-bold">Detalhes do anuncio</h5>
                 <button
                   type="button"
                   className="btn-close custom-btn-close"
@@ -392,33 +525,35 @@ const InstructorAnnouncements = () => {
                 </button>
               </div>
               <div className="modal-body">
-                <div className="mb-3">
-                  <h6 className="mb-1">Course</h6>
-                  <p>Introduction to Programming - Python &amp; Java</p>
-                </div>
-                <div className="mb-3">
-                  <h6 className="mb-1">Title</h6>
-                  <p>Guest Lecture Announcement</p>
-                </div>
-                <div className="mb-3">
-                  <h6 className="mb-1">Description</h6>
-                  <p>
-                    I am excited to inform you that we will be having a guest
-                    lecture from , an expert . This will be an excellent
-                    opportunity to gain insight into and ask any questions you
-                    might have. Please make every effort to attend, as
-                    participation will count towards.
-                  </p>
-                </div>
-                <div className="mb-0">
-                  <h6 className="mb-1">Added On</h6>
-                  <p>26 Jul 2025, 01:30 PM</p>
-                </div>
+                {selectedAnnouncement && (
+                  <>
+                    <div className="mb-3">
+                      <h6 className="mb-1">Curso</h6>
+                      <p>{selectedAnnouncement.course?.name || selectedAnnouncement.course?.title || 'N/A'}</p>
+                    </div>
+                    <div className="mb-3">
+                      <h6 className="mb-1">Título</h6>
+                      <p>{selectedAnnouncement.title}</p>
+                    </div>
+                    <div className="mb-3">
+                      <h6 className="mb-1">Descrição</h6>
+                      <p>{selectedAnnouncement.message || 'Sem descrição'}</p>
+                    </div>
+                    <div className="mb-3">
+                      <h6 className="mb-1">Status</h6>
+                      <p>{selectedAnnouncement.status || 'N/A'}</p>
+                    </div>
+                    <div className="mb-0">
+                      <h6 className="mb-1">Data de Criação</h6>
+                      <p>{selectedAnnouncement.createdAt ? new Date(selectedAnnouncement.createdAt).toLocaleString('pt-BR') : 'N/A'}</p>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </div>
         </div>
-        {/* /Announcement Details */}
+        {/* /Detalhes do anuncio */}
         {/* Delete Modal */}
         <div className="modal fade" id="delete_modal">
           <div className="modal-dialog modal-dialog-centered">
@@ -428,21 +563,25 @@ const InstructorAnnouncements = () => {
                   <i className="isax isax-trash fs-24 text-danger" />
                 </span>
                 <div>
-                  <h4 className="mb-2">Delete Announcements</h4>
+                  <h4 className="mb-2">Excluir anúncio</h4>
                   <p className="mb-3">
-                    Are you sure you want to delete announcements?
+                    Tem certeza de que deseja excluir o anúncio {announcementToDelete?.title ? `"${announcementToDelete.title}"` : ''}?
                   </p>
                   <div className="d-flex align-items-center justify-content-center">
-                    <Link
-                      to="#"
+                    <button
                       className="btn bg-gray-100 rounded-pill me-2"
                       data-bs-dismiss="modal"
+                      type="button"
                     >
-                      Cancel
-                    </Link>
-                    <Link to="#" className="btn btn-secondary rounded-pill">
-                      Yes, Delete
-                    </Link>
+                      Cancelar
+                    </button>
+                    <button
+                      className="btn btn-danger rounded-pill"
+                      type="button"
+                      onClick={handleDeleteConfirm}
+                    >
+                      Sim, Excluir
+                    </button>
                   </div>
                 </div>
               </div>

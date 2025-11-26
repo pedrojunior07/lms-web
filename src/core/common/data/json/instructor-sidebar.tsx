@@ -57,6 +57,11 @@ export const instructorSidebarData = [
     icon: "isax isax-coin-15",
     route: all_routes.instructorPayout,
   },
+  {
+    title: "M-Pesa (teste)",
+    icon: "isax isax-card-tick5",
+    route: all_routes.instructorApiTester,
+  },
   /**{
     title: "Extratos",
     icon: "isax isax-shopping-cart5",

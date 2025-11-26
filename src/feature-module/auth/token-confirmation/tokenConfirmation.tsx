@@ -29,7 +29,7 @@ const TokenConfirmation: React.FC = () => {
      * em um único ponto da aplicação.
      */
     axios
-      .get("http://localhost:8085/e-learning/api/auth/registrationConfirm", {
+      .get("http://102.211.186.111:8085/e-learning/api/auth/registrationConfirm", {
         params: { token },
       })
       .then((response) => {

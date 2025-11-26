@@ -4,6 +4,8 @@ import ImageWithBasePath from "../../../../core/common/imageWithBasePath";
 import { all_routes } from "../../../router/all_routes";
 import { useCart } from "../../../../core/common/context/cartContext";
 import { useCourseApi } from "../../../../core/api/hooks/useCourseApi";
+import { useEnrollments } from "../../../../core/common/context/enrollmentContext";
+import { toast } from "react-toastify";
 
 const Feature = () => {
   const [featureCourses, setFeautured] = useState<any[]>([]);
@@ -13,6 +15,7 @@ const Feature = () => {
     {}
   );
   const { addToCart } = useCart();
+  const { isEnrolled } = useEnrollments();
 
   const handleItemClick = (id: number) => {
     setSelectedItems((prev) => ({
@@ -24,7 +27,12 @@ const Feature = () => {
   const handleAddToCart = (e: React.MouseEvent, course: any) => {
     e.preventDefault();
     e.stopPropagation();
+    if (isEnrolled(course.id)) {
+      toast.info("Voce ja esta inscrito neste curso.");
+      return;
+    }
     addToCart(course);
+    toast.success(`${course.title ?? "Curso"} adicionado ao carrinho!`);
   };
 
   const { getTop10Cources } = useCourseApi();
@@ -34,11 +42,8 @@ const Feature = () => {
       try {
         setLoading(true);
         const response = await getTop10Cources();
-        
-        // Verifica a estrutura da resposta e extrai os dados
+
         const coursesData = response.data || response || [];
-        
-        console.log("Featured courses data:", coursesData);
         setFeautured(Array.isArray(coursesData) ? coursesData : []);
       } catch (error: any) {
         console.error("Erro ao buscar cursos em destaque:", error);
@@ -51,18 +56,16 @@ const Feature = () => {
     fetchFeaturedCourses();
   }, []);
 
-  // Função para gerar avaliações aleatórias (como fallback)
   const generateRandomRating = () => {
     const ratings = [4.5, 4.7, 4.8, 4.9, 5.0];
     const reviewCounts = [156, 203, 189, 234, 178];
     const randomIndex = Math.floor(Math.random() * ratings.length);
     return {
       rating: ratings[randomIndex],
-      reviews: reviewCounts[randomIndex]
+      reviews: reviewCounts[randomIndex],
     };
   };
 
-  // Função para gerar duração aleatória (como fallback)
   const generateRandomDuration = () => {
     const durations = ["6h 30min", "8h 15min", "5h 45min", "7h 20min", "9h 10min"];
     return durations[Math.floor(Math.random() * durations.length)];
@@ -84,7 +87,7 @@ const Feature = () => {
               <div className="col-xl-4 col-lg-6 col-md-6 col-sm-12 d-flex mb-4" key={index}>
                 <div className="course-item course-item-four mx-0 d-flex flex-column w-100">
                   <div className="course-img placeholder-glow">
-                    <div className="placeholder bg-secondary" style={{ height: '200px' }}></div>
+                    <div className="placeholder bg-secondary" style={{ height: "200px" }}></div>
                   </div>
                   <div className="course-content d-flex flex-column flex-grow-1 p-3">
                     <div className="rating mb-2 placeholder-glow">
@@ -102,7 +105,7 @@ const Feature = () => {
                       <span className="placeholder col-3"></span>
                     </div>
                     <div className="mt-auto placeholder-glow">
-                      <span className="placeholder col-12" style={{ height: '40px' }}></span>
+                      <span className="placeholder col-12" style={{ height: "40px" }}></span>
                     </div>
                   </div>
                 </div>
@@ -116,14 +119,9 @@ const Feature = () => {
 
   return (
     <>
-      {/* Cursos em Destaque */}
       <section className="featured-courses-sec">
         <div className="patter-bg">
-          <ImageWithBasePath
-            className="patter-one"
-            src="assets/img/bg/bg-13.png"
-            alt="Img"
-          />
+          <ImageWithBasePath className="patter-one" src="assets/img/bg/bg-13.png" alt="Img" />
         </div>
         <div className="container">
           <div className="section-header text-center">
@@ -131,12 +129,9 @@ const Feature = () => {
               Novidades
             </span>
             <h2>Cursos em Destaque</h2>
-            <p>
-              Obtenha certificação, domine habilidades tecnológicas modernas e
-              impulsione sua carreira
-            </p>
+            <p>Obtenha certificaAAœo, domine habilidades tecnolA3gicas modernas e impulsione sua carreira</p>
           </div>
-          
+
           {featureCourses.length === 0 ? (
             <div className="text-center py-5">
               <i className="isax isax-book-1 fs-1 text-muted mb-3"></i>
@@ -146,16 +141,12 @@ const Feature = () => {
           ) : (
             <div className="featured-courses-two">
               <div className="row">
-                {/* Cursos em Destaque */}
                 {featureCourses.map((course) => {
                   const ratingInfo = generateRandomRating();
-                  
+                  const alreadyEnrolled = isEnrolled(course.id);
+
                   return (
-                    <div
-                      className="col-xl-4 col-lg-6 col-md-6 col-sm-12 d-flex mb-4"
-                      data-aos="fade-down"
-                      key={course.id}
-                    >
+                    <div className="col-xl-4 col-lg-6 col-md-6 col-sm-12 d-flex mb-4" data-aos="fade-down" key={course.id}>
                       <div className="course-item course-item-four mx-0 d-flex flex-column w-100 shadow-sm hover-shadow">
                         <div className="course-img position-relative">
                           <Link
@@ -168,54 +159,48 @@ const Feature = () => {
                               className="img-fluid w-100"
                               alt={course.title || "Curso"}
                               src={
-                                course.thumbnailPath 
-                                  ? course.thumbnailPath.startsWith('http') 
-                                    ? course.thumbnailPath 
+                                course.thumbnailPath
+                                  ? course.thumbnailPath.startsWith("http")
+                                    ? course.thumbnailPath
                                     : `/assets/img/${course.thumbnailPath}`
                                   : "/assets/img/course/course-40.jpg"
                               }
-                              style={{ 
-                                height: '200px', 
-                                objectFit: 'cover',
-                                width: '100%'
-                              }}
+                              style={{ height: "200px", objectFit: "cover", width: "100%" }}
                               onError={(e) => {
                                 const target = e.target as HTMLImageElement;
                                 target.src = "/assets/img/course/course-40.jpg";
                               }}
                             />
                           </Link>
-                          {course.price === 0 || course.isFree && (
+                          {(course.price === 0 || course.isFree) && (
                             <span className="course-tag free-tag position-absolute top-0 start-0 bg-success text-white px-2 py-1 m-2 rounded">
-                              Grátis
+                              GrA­tis
                             </span>
                           )}
                         </div>
                         <div className="course-content d-flex flex-column flex-grow-1 p-3">
                           <div className="rating mb-2">
                             {[...Array(5)].map((_, index) => (
-                              <i 
+                              <i
                                 key={index}
-                                className={`fas fa-star ${index < Math.floor(ratingInfo.rating) ? 'filled text-warning' : 'text-muted'}`}
+                                className={`fas fa-star ${index < Math.floor(ratingInfo.rating) ? "filled text-warning" : "text-muted"}`}
                               />
                             ))}
-                            <span className="ms-2 text-muted">
-                              {ratingInfo.reviews} avaliações
-                            </span>
+                            <span className="ms-2 text-muted">{ratingInfo.reviews} avaliaAAæes</span>
                           </div>
-                          
+
                           <h3 className="title mb-2 flex-grow-0">
-                            <Link 
+                            <Link
                               to={{
                                 pathname: `${all_routes.courseDetails}`,
                                 search: `?id=${course.id}`,
                               }}
                               className="text-dark text-decoration-none"
                             >
-                              {course.title || "Título do Curso"}
+                              {course.title || "TA-tulo do Curso"}
                             </Link>
                           </h3>
-                          
+
                           <div className="user-info mb-2 d-flex justify-content-between align-items-center">
                             <p className="user-name mb-0 text-muted">
                               <Link
@@ -228,11 +213,9 @@ const Feature = () => {
                                 {course.instructorName || "Instrutor"}
                               </Link>
                             </p>
-                            <p className="course-level mb-0 text-muted">
-                              {course.level || "Intermediário"}
-                            </p>
+                            <p className="course-level mb-0 text-muted">{course.level || "IntermediA­rio"}</p>
                           </div>
-                          
+
                           <div className="course-info mb-2 d-flex justify-content-between align-items-center">
                             <p className="course-time mb-0 text-muted">
                               <i className="fa-regular fa-clock me-2" />
@@ -240,48 +223,47 @@ const Feature = () => {
                             </p>
                             <div className="price">
                               <h3 className="mb-0 text-primary">
-                                {course.price === 0 || course.isFree ? "Grátis" : `MZN${course.price?.toFixed(2) || "0.00"}`}
+                                {course.price === 0 || course.isFree ? "GrA­tis" : `MZN${course.price?.toFixed(2) || "0.00"}`}
                               </h3>
                             </div>
                           </div>
-                          
-                          {/* Botão Adicionar ao Carrinho alinhado à direita */}
+
                           <div className="mt-auto d-flex justify-content-end">
-                            <button
-                              className="btn btn-primary btn-sm d-flex align-items-center"
-                              onClick={(e: React.MouseEvent<HTMLButtonElement>) =>
-                                handleAddToCart(e, course)
-                              }
-                            >
-                              <i className="isax isax-shopping-cart5 me-2" />
-                              Adicionar ao Carrinho
-                            </button>
+                            {alreadyEnrolled ? (
+                              <Link className="btn btn-outline-secondary btn-sm d-flex align-items-center" to={`${route.courseWatch}?id=${course.id}`}>
+                                <i className="fa-solid fa-play me-2" />
+                                Ver Curso
+                              </Link>
+                            ) : (
+                              <button
+                                className="btn btn-primary btn-sm d-flex align-items-center"
+                                onClick={(e: React.MouseEvent<HTMLButtonElement>) => handleAddToCart(e, course)}
+                              >
+                                <i className="isax isax-shopping-cart5 me-2" />
+                                Adicionar ao Carrinho
+                              </button>
+                            )}
                           </div>
                         </div>
                       </div>
                     </div>
                   );
                 })}
-                {/* /Cursos em Destaque */}
               </div>
             </div>
           )}
 
-          {/* Ver todos os Cursos */}
           {featureCourses.length > 0 && (
             <div className="col-lg-12 mt-4" data-aos="fade-up">
               <div className="more-details text-center">
                 <Link to={route.courseList} className="btn btn-secondary btn-xl">
-                  Ver Todos os Cursos{" "}
-                  <i className="isax isax-arrow-right-1 ms-2" />
+                  Ver Todos os Cursos <i className="isax isax-arrow-right-1 ms-2" />
                 </Link>
               </div>
             </div>
           )}
-          {/* /Ver todos os Cursos */}
         </div>
       </section>
-      {/* /Cursos em Destaque */}
     </>
   );
 };

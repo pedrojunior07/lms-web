@@ -21,7 +21,7 @@ const LoginRoute = () => {
     setLoading(true);
     try {
       const response = await axios.post(
-        "http://localhost:8085/e-learning/api/auth/login",
+        "http://102.211.186.111:8085/e-learning/api/auth/login",
         { email, password }
       );
 
@@ -52,7 +52,7 @@ const LoginRoute = () => {
       } else if (userData.role === "ROLE_INSTRUCTOR") {
         navigate(routes.instructorDashboard);
       } else {
-        navigate(routes.studentDashboard);
+        navigate(routes.studentProfile);
       }
     } catch (error: any) {
       const errorMessage =

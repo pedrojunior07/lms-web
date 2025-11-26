@@ -16,6 +16,7 @@ import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { CartProvider } from "./core/common/context/cartContext";
 import { AuthProvider } from "./core/common/context/AuthContextType";
+import { EnrollmentProvider } from "./core/common/context/enrollmentContext";
 
 const root = ReactDOM.createRoot(
   document.getElementById("root") as HTMLElement
@@ -25,23 +26,25 @@ root.render(
   <React.StrictMode>
     <Provider store={store}>
       <AuthProvider>
-        <CartProvider>
-          <BrowserRouter basename={base_path}>
-            <ALLRoutes />
-            <ToastContainer
-              position="top-right"
-              autoClose={3000}
-              hideProgressBar={false}
-              newestOnTop={false}
-              closeOnClick
-              rtl={false}
-              pauseOnFocusLoss
-              draggable
-              pauseOnHover
-              theme="light"
-            />
-          </BrowserRouter>
-        </CartProvider>
+        <EnrollmentProvider>
+          <CartProvider>
+            <BrowserRouter basename={base_path}>
+              <ALLRoutes />
+              <ToastContainer
+                position="top-right"
+                autoClose={3000}
+                hideProgressBar={false}
+                newestOnTop={false}
+                closeOnClick
+                rtl={false}
+                pauseOnFocusLoss
+                draggable
+                pauseOnHover
+                theme="light"
+              />
+            </BrowserRouter>
+          </CartProvider>
+        </EnrollmentProvider>
       </AuthProvider>
     </Provider>
   </React.StrictMode>

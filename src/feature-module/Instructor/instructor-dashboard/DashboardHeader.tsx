@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import React, { useEffect, useMemo, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import ImageWithBasePath from "../../../core/common/imageWithBasePath";
 import { all_routes } from "../../router/all_routes";
 import { useDispatch, useSelector } from "react-redux";
@@ -7,6 +7,81 @@ import header from "../../../core/common/header/header";
 
 import { Button, Modal } from "react-bootstrap";
 import { useCart } from "../../../core/common/context/cartContext";
+import { usePerson } from "../../../core/api/hooks/useUserApi";
+import { useAuth } from "../../../core/common/context/AuthContextType";
+type ProfileInfo = {
+  name: string;
+  email: string;
+  avatar: string;
+};
+
+const avatarFallbackStyles: React.CSSProperties = {
+  width: "100%",
+  height: "100%",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  backgroundColor: "#4f46e5",
+  color: "#fff",
+  fontWeight: 600,
+  borderRadius: "inherit",
+  textTransform: "uppercase",
+};
+
+const sanitizeText = (value?: string) => (value || "").trim();
+
+const sanitizeAvatar = (value?: string) => {
+  if (!value) {
+    return "";
+  }
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return "";
+  }
+  const lower = trimmed.toLowerCase();
+  if (lower === "null" || lower === "undefined") {
+    return "";
+  }
+  return trimmed;
+};
+
+const getInitials = (value?: string) => {
+  const source = sanitizeText(value);
+  if (!source) {
+    return "IN";
+  }
+  const parts = source.split(/\s+/).filter(Boolean);
+  if (parts.length === 1) {
+    return parts[0].slice(0, 2).toUpperCase();
+  }
+  return `${parts[0].charAt(0)}${parts[parts.length - 1].charAt(0)}`.toUpperCase();
+};
+
+const buildName = (entity?: any) => {
+  if (!entity) {
+    return "";
+  }
+  if (entity.fullName) {
+    return sanitizeText(entity.fullName);
+  }
+  if (entity.name) {
+    return sanitizeText(entity.name);
+  }
+  const first = sanitizeText(entity.firstName);
+  const last = sanitizeText(entity.lastName);
+  return `${first} ${last}`.trim();
+};
+
+const extractAvatar = (entity?: any) =>
+  sanitizeAvatar(
+    entity?.photoUrl ||
+      entity?.profilePicture ||
+      entity?.avatarUrl ||
+      entity?.imageUrl ||
+      entity?.photo
+  );
+
+
 interface DashboardHeaderProps {
   onHandleMobileMenu: () => void;
 }
@@ -22,8 +97,88 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
   const [basePath, setBasePath] = useState("");
   const dispatch = useDispatch();
   const location = useLocation();
+  const navigate = useNavigate();
   const { cartCount } = useCart();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const { logout } = useAuth();
+  const { getUser } = usePerson();
+  const [profileInfo, setProfileInfo] = useState<ProfileInfo>(() => ({
+    name: "",
+    email: localStorage.getItem("email") || "",
+    avatar: "",
+  }));
+
+
+  const handleLogout = () => {
+    logout();
+    navigate(all_routes.homefour);
+  };
+
+  useEffect(() => {
+    const instructorId = localStorage.getItem("id");
+    if (!instructorId) {
+      return;
+    }
+
+    let isMounted = true;
+
+    const fetchProfile = async () => {
+      try {
+        const data = await getUser(Number(instructorId));
+        if (!isMounted) {
+          return;
+        }
+        setProfileInfo((prev) => ({
+          name: buildName(data) || prev.name || "Instrutor",
+          email:
+            data?.email || prev.email || localStorage.getItem("email") || "",
+          avatar: extractAvatar(data) || prev.avatar,
+        }));
+      } catch (error) {
+        console.error("Erro ao carregar dados do instrutor:", error);
+      } finally {
+        
+      }
+    };
+
+    fetchProfile();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [getUser]);
+
+  const displayName = profileInfo.name || profileInfo.email || "Instrutor";
+  const displayEmail = profileInfo.email || "";
+  const profileAvatar = useMemo(
+    () => sanitizeAvatar(profileInfo.avatar),
+    [profileInfo.avatar]
+  );
+  const profileInitials = useMemo(
+    () => getInitials(displayName || displayEmail || "Instrutor"),
+    [displayName, displayEmail]
+  );
+
+  const renderProfileAvatar = (className = "img-fluid rounded-circle") => {
+    if (profileAvatar) {
+      return (
+        <ImageWithBasePath
+          src={profileAvatar}
+          alt={displayName}
+          className={className}
+        />
+      );
+    }
+
+    return (
+      <span
+        className={`avatar-fallback d-flex align-items-center justify-content-center w-100 h-100 ${className}`}
+        style={avatarFallbackStyles}
+      >
+        {profileInitials}
+      </span>
+    );
+  };
 
   function toggleSidebar(tittle: any): void {
     throw new Error("Function not implemented.");
@@ -75,13 +230,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
               className="d-flex align-items-center"
               data-bs-toggle="dropdown"
             >
-              <span className="avatar">
-                <ImageWithBasePath
-                  src="assets/img/user/user-01.jpg"
-                  alt="Img"
-                  className="img-fluid rounded-circle"
-                />
-              </span>
+              <span className="avatar">{renderProfileAvatar()}</span>
             </Link>
             <ul className={`main-nav ${isMegaMenu ? "active" : ""}`}>
               {Array.isArray(header) &&
@@ -321,16 +470,10 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
             </ul>
             <div className="dropdown-menu dropdown-menu-end">
               <div className="profile-header d-flex align-items-center">
-                <div className="avatar">
-                  <ImageWithBasePath
-                    src="assets/img/user/user-01.jpg"
-                    alt="Img"
-                    className="img-fluid rounded-circle"
-                  />
-                </div>
+                <div className="avatar">{renderProfileAvatar()}</div>
                 <div>
-                  <h6>Eugene Andre</h6>
-                  <p>instructerdemo@example.com</p>
+                  <h6>{displayName}</h6>
+                  {displayEmail && <p>{displayEmail}</p>}
                 </div>
               </div>
               <ul className="profile-body">
@@ -340,7 +483,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
                     className="dropdown-item d-inline-flex align-items-center rounded fw-medium"
                   >
                     <i className="isax isax-security-user me-2" />
-                    My Profile
+                    Meu Perfil
                   </Link>
                 </li>
                 <li>
@@ -349,7 +492,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
                     className="dropdown-item d-inline-flex align-items-center rounded fw-medium"
                   >
                     <i className="isax isax-teacher me-2" />
-                    Courses
+                    Cursos
                   </Link>
                 </li>
                 <li>
@@ -358,7 +501,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
                     className="dropdown-item d-inline-flex align-items-center rounded fw-medium2"
                   >
                     <i className="isax isax-dollar-circle me-2" />
-                    Earnings
+                    Ganhos
                   </Link>
                 </li>
                 <li>
@@ -367,7 +510,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
                     className="dropdown-item d-inline-flex align-items-center rounded fw-medium"
                   >
                     <i className="isax isax-coin me-2" />
-                    Payouts
+                    Pagamentos
                   </Link>
                 </li>
                 <li>
@@ -376,7 +519,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
                     className="dropdown-item d-inline-flex align-items-center rounded fw-medium"
                   >
                     <i className="isax isax-messages-3 me-2" />
-                    Messages <span className="message-count">2</span>
+                    Mensagens <span className="message-count">2</span>
                   </Link>
                 </li>
                 <li>
@@ -385,7 +528,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
                     className="dropdown-item d-inline-flex align-items-center rounded fw-medium"
                   >
                     <i className="isax isax-setting-2 me-2" />
-                    Settings
+                    Configurações
                   </Link>
                 </li>
               </ul>
@@ -395,14 +538,15 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
                   className="dropdown-item d-inline-flex align-items-center rounded fw-medium"
                 >
                   <i className="isax isax-arrow-2 me-2" />
-                  Log in as Student
+                  Entrar como Aluno
                 </Link>
                 <Link
-                  to={all_routes.homeone}
+                  to={all_routes.homefour}
                   className="btn btn-secondary d-inline-flex align-items-center justify-content-center w-100"
+                  onClick={handleLogout}
                 >
                   <i className="isax isax-logout me-2" />
-                  Logout
+                  Sair
                 </Link>
               </div>
             </div>

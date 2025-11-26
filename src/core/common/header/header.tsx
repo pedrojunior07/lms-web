@@ -1,13 +1,89 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import ImageWithBasePath from "../imageWithBasePath";
 import { header } from "../data/json/header";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { all_routes } from "../../../feature-module/router/all_routes";
 import { setDataTheme } from "../../redux/themeSettingSlice";
 import { useDispatch, useSelector } from "react-redux";
 import { useCart } from "../context/cartContext";
 import { useAuth } from "../context/AuthContextType";
 import { Button, Modal } from "react-bootstrap";
+import { usePerson } from "../../api/hooks/useUserApi";
+import { useStudent } from "../../api/hooks/useStudents";
+
+
+
+type ProfileInfo = {
+  name: string;
+  email: string;
+  avatar: string;
+};
+
+const avatarFallbackStyles: React.CSSProperties = {
+  width: "100%",
+  height: "100%",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  backgroundColor: "rgba(36, 118, 255, 0.9)",
+  color: "#fff",
+  fontWeight: 600,
+  borderRadius: "inherit",
+  textTransform: "uppercase",
+};
+
+const sanitizeText = (value?: string) => (value || "").trim();
+
+const sanitizeAvatar = (value?: string) => {
+  if (!value) {
+    return "";
+  }
+  const sanitized = value.trim();
+  if (!sanitized) {
+    return "";
+  }
+  const lower = sanitized.toLowerCase();
+  if (lower === "null" || lower === "undefined") {
+    return "";
+  }
+  return sanitized;
+};
+
+const getInitials = (value?: string) => {
+  const source = sanitizeText(value);
+  if (!source) {
+    return "US";
+  }
+  const parts = source.split(" ").filter(Boolean);
+  if (parts.length === 1) {
+    return parts[0].slice(0, 2).toUpperCase();
+  }
+  return `${parts[0].charAt(0)}${parts[parts.length - 1].charAt(0)}`.toUpperCase();
+};
+
+const buildName = (entity?: any) => {
+  if (!entity) {
+    return "";
+  }
+  if (entity.fullName) {
+    return sanitizeText(entity.fullName);
+  }
+  if (entity.name) {
+    return sanitizeText(entity.name);
+  }
+  const first = sanitizeText(entity.firstName);
+  const last = sanitizeText(entity.lastName);
+  return `${first} ${last}`.trim();
+};
+
+const extractAvatar = (entity?: any) =>
+  sanitizeAvatar(
+    entity?.photoUrl ||
+      entity?.profilePicture ||
+      entity?.avatarUrl ||
+      entity?.imageUrl ||
+      entity?.photo
+  );
 
 const Header = () => {
   const [scrolled, setScrolled] = useState(false);
@@ -18,6 +94,8 @@ const Header = () => {
   const [basePath, setBasePath] = useState("");
   const dispatch = useDispatch();
   const location = useLocation();
+  const navigate = useNavigate();
+  const isInstructorRoute = location.pathname.includes("instructor");
   const { cartCount } = useCart();
   const [role, setRole] = useState("");
   const [showLogoutModal, setShowLogoutModal] = useState(false);
@@ -27,6 +105,7 @@ const Header = () => {
   const handleLogout = () => {
     logout();
     setShowLogoutModal(false);
+    navigate(all_routes.homefour);
   };
   
   const dataTheme = useSelector((state: any) => state.themeSetting.dataTheme);
@@ -46,6 +125,13 @@ const Header = () => {
   };
   
   const { isAuthenticated, user, logout } = useAuth();
+  const { getUser } = usePerson();
+  const { getStudentById } = useStudent();
+  const [profileInfo, setProfileInfo] = useState<ProfileInfo>({
+    name: "",
+    email: "",
+    avatar: "",
+  });
 
   const toggleSidebar = (title: any) => {
     localStorage.setItem("menuOpened", title);
@@ -74,20 +160,15 @@ const Header = () => {
 
   const header7 = header.map((mainMenu: any) => {
     const filteredMenu = mainMenu.menu?.filter((menu: any) => {
-      // Se não houver usuário logado, bloqueia menus restritos
       if (!user) {
-        // Aqui você pode definir quais menus são públicos; por exemplo, menus com public: true
-        return menu.public === true; // assume que menus públicos têm public: true
+        return menu.public === true;
       }
-
-      // Se usuário logado, filtra menus conforme o papel
       if (user.role === "ROLE_STUDENT" && menu.menuValue === "Instrutor") {
         return false;
       }
       if (user.role === "ROLE_INSTRUCTOR" && menu.menuValue === "Aluno") {
         return false;
       }
-
       return true;
     });
 
@@ -96,6 +177,116 @@ const Header = () => {
       menu: filteredMenu,
     };
   });
+
+  const visibleHeaderMenus = isInstructorRoute
+    ? header7.filter((menu: any) => menu.tittle !== "Home")
+    : header7;
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setProfileInfo({ name: "", email: "", avatar: "" });
+      return;
+    }
+
+    const storedEmail = localStorage.getItem("email") || user?.email || "";
+    const rawUser = localStorage.getItem("user");
+
+    if (!rawUser) {
+      if (storedEmail) {
+        setProfileInfo((prev) => ({ ...prev, email: storedEmail }));
+      }
+      return;
+    }
+
+    try {
+      const parsed = JSON.parse(rawUser);
+      setProfileInfo((prev) => ({
+        name: buildName(parsed) || prev.name,
+        email: parsed?.email || storedEmail || prev.email,
+        avatar: extractAvatar(parsed) || prev.avatar,
+      }));
+    } catch (error) {
+      console.error("Erro ao analisar usu?rio armazenado:", error);
+      if (storedEmail) {
+        setProfileInfo((prev) => ({ ...prev, email: storedEmail }));
+      }
+    }
+  }, [isAuthenticated, user]);
+
+  useEffect(() => {
+    if (!isAuthenticated || !role) {
+      return;
+    }
+    const id = localStorage.getItem("id");
+    if (!id) {
+      return;
+    }
+
+    const fetchProfile = async () => {
+      try {
+        if (role === "ROLE_INSTRUCTOR") {
+          const data = await getUser(Number(id));
+          setProfileInfo((prev) => ({
+            name: buildName(data) || prev.name,
+            email: data?.email || prev.email,
+            avatar: extractAvatar(data) || prev.avatar,
+          }));
+        } else if (role === "ROLE_STUDENT") {
+          const response = await getStudentById(Number(id));
+          const studentData = response?.data ?? response;
+          setProfileInfo((prev) => ({
+            name: buildName(studentData) || prev.name,
+            email: studentData?.email || prev.email,
+            avatar: extractAvatar(studentData) || prev.avatar,
+          }));
+        }
+      } catch (error) {
+        console.error("Erro ao carregar dados do perfil:", error);
+      }
+    };
+
+    fetchProfile();
+  }, [getStudentById, getUser, isAuthenticated, role]);
+
+  const fallbackEmail =
+    profileInfo.email || user?.email || localStorage.getItem("email") || "";
+  const defaultName =
+    role === "ROLE_INSTRUCTOR"
+      ? "Instrutor"
+      : role === "ROLE_STUDENT"
+      ? "Estudante"
+      : "Usu?rio";
+  const displayName = profileInfo.name?.trim() || fallbackEmail || defaultName;
+  const displayEmail = fallbackEmail || defaultName;
+  const profileAvatar = useMemo(
+    () => sanitizeAvatar(profileInfo.avatar),
+    [profileInfo.avatar]
+  );
+  const profileInitials = useMemo(
+    () => getInitials(displayName || displayEmail || defaultName),
+    [displayName, displayEmail, defaultName]
+  );
+
+  const renderProfileAvatar = (className = "img-fluid rounded-circle") => {
+    if (profileAvatar) {
+      return (
+        <ImageWithBasePath
+          src={profileAvatar}
+          alt={displayName}
+          className={className}
+        />
+      );
+    }
+
+    return (
+      <span
+        className={`avatar-fallback d-flex align-items-center justify-content-center w-100 h-100 ${className}`}
+        style={avatarFallbackStyles}
+      >
+        {profileInitials}
+      </span>
+    );
+  };
 
   // Atualiza role sempre que o usuário mudar
   useEffect(() => {
@@ -234,7 +425,7 @@ const Header = () => {
                 </Link>
               </div>
               <ul className={`main-nav ${isMegaMenu ? "active" : ""}`}>
-                {header7.map((mainMenus: any, mainIndex: number) => (
+                {visibleHeaderMenus.map((mainMenus: any, mainIndex: number) => (
                   <React.Fragment key={mainIndex}>
                     {/* Redirecionamento direto para Home */}
                     {mainMenus.tittle === "Home" ? (
@@ -270,6 +461,26 @@ const Header = () => {
                         }
                       >
                         <Link to={all_routes.about_us}>Sobre nós</Link>
+                      </li>
+                    ) : mainMenus.isDashboard ? (
+                      // Redirecionamento dinâmico do Painel baseado no role
+                      <li
+                        className={
+                          location.pathname === all_routes.instructorDashboard ||
+                          location.pathname === all_routes.studentProfile
+                            ? "active"
+                            : ""
+                        }
+                      >
+                        <Link
+                          to={
+                            role === "ROLE_INSTRUCTOR"
+                              ? all_routes.instructorDashboard
+                              : all_routes.studentProfile
+                          }
+                        >
+                          {mainMenus.tittle}
+                        </Link>
                       </li>
                     ) : mainMenus.separateRoute ? (
                       // Caso de megamenu
@@ -505,6 +716,17 @@ const Header = () => {
                     )}
                   </React.Fragment>
                 ))}
+                {isAuthenticated && role === "ROLE_STUDENT" && (
+                  <li
+                    className={
+                      location.pathname === all_routes.studentCourses
+                        ? "active"
+                        : ""
+                    }
+                  >
+                    <Link to={all_routes.studentCourses}>Meus Cursos</Link>
+                  </li>
+                )}
               </ul>
             </div>
             {location.pathname === "/index" ? (
@@ -547,6 +769,34 @@ const Header = () => {
                 <DarkButton />
                 {isAuthenticated ? (
                   <>
+                    <div className="dropdown profile-dropdown me-3">
+                      <Link
+                        to="#"
+                        className="d-flex align-items-center"
+                        data-bs-toggle="dropdown"
+                      >
+                        <span className="avatar">{renderProfileAvatar()}</span>
+                      </Link>
+                      <div className="dropdown-menu dropdown-menu-end">
+                        <div className="profile-header d-flex align-items-center">
+                          <div className="avatar">{renderProfileAvatar()}</div>
+                          <div>
+                            <h6>{displayName}</h6>
+                            {displayEmail && <p>{displayEmail}</p>}
+                          </div>
+                        </div>
+                        <div className="profile-footer">
+                          <button
+                            type="button"
+                            className="btn btn-secondary d-inline-flex align-items-center justify-content-center w-100"
+                            onClick={() => setShowLogoutModal(true)}
+                          >
+                            <i className="isax isax-logout me-2" />
+                            Terminar Sessao
+                          </button>
+                        </div>
+                      </div>
+                    </div>
                     <button
                       onClick={() => setShowLogoutModal(true)}
                       className="btn btn-danger d-inline-flex align-items-center"
@@ -554,7 +804,7 @@ const Header = () => {
                       Sair
                     </button>
 
-                    {/* Modal de Confirmação */}
+                    {/* Modal de Confirmacao */}
                     <Modal
                       show={showLogoutModal}
                       onHide={() => setShowLogoutModal(false)}
@@ -1007,25 +1257,17 @@ const Header = () => {
                     data-bs-toggle="dropdown"
                   >
                     <span className="avatar">
-                      <ImageWithBasePath
-                        src="assets/img/user/user-01.jpg"
-                        alt="Img"
-                        className="img-fluid rounded-circle"
-                      />
+                      {renderProfileAvatar()}
                     </span>
                   </Link>
                   <div className="dropdown-menu dropdown-menu-end">
                     <div className="profile-header d-flex align-items-center">
                       <div className="avatar">
-                        <ImageWithBasePath
-                          src="assets/img/user/user-01.jpg"
-                          alt="Img"
-                          className="img-fluid rounded-circle"
-                        />
+                        {renderProfileAvatar()}
                       </div>
                       <div>
-                        <h6>Eugene Andre</h6>
-                        <p>instructordemo@example.com</p>
+                        <h6>{displayName}</h6>
+                        {displayEmail && <p>{displayEmail}</p>}
                       </div>
                     </div>
                     <ul className="profile-body">
@@ -1092,13 +1334,14 @@ const Header = () => {
                         <i className="isax isax-arrow-2 me-2" />
                         Entrar como Aluno
                       </Link>
-                      <Link
-                        to={all_routes.homefour}
+                      <button
+                        type="button"
                         className="btn btn-secondary d-inline-flex align-items-center justify-content-center w-100"
+                        onClick={handleLogout}
                       >
                         <i className="isax isax-logout me-2" />
                         Sair
-                      </Link>
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -1126,25 +1369,17 @@ const Header = () => {
                     data-bs-toggle="dropdown"
                   >
                     <span className="avatar">
-                      <ImageWithBasePath
-                        src="assets/img/user/user-02.jpg"
-                        alt="Img"
-                        className="img-fluid rounded-circle"
-                      />
+                      {renderProfileAvatar()}
                     </span>
                   </Link>
                   <div className="dropdown-menu dropdown-menu-end">
                     <div className="profile-header d-flex align-items-center">
                       <div className="avatar">
-                        <ImageWithBasePath
-                          src="assets/img/user/user-02.jpg"
-                          alt="Img"
-                          className="img-fluid rounded-circle"
-                        />
+                        {renderProfileAvatar()}
                       </div>
                       <div>
-                        <h6>Yanik Mussagy</h6>
-                        <p>ribeiroyannick405@gmail.com</p>
+                        <h6>{displayName}</h6>
+                        {displayEmail && <p>{displayEmail}</p>}
                       </div>
                     </div>
                     <ul className="profile-body">
@@ -1182,13 +1417,14 @@ const Header = () => {
                     </ul>
                     <div className="profile-footer">
 
-                      <Link
-                        to={all_routes.homefour}
+                      <button
+                        type="button"
                         className="btn btn-secondary d-inline-flex align-items-center justify-content-center w-100"
+                        onClick={handleLogout}
                       >
                         <i className="isax isax-logout me-2" />
                         Sair
-                      </Link>
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -1295,6 +1531,34 @@ const Header = () => {
                 </div>
                 {isAuthenticated ? (
                   <>
+                    <div className="dropdown profile-dropdown me-3">
+                      <Link
+                        to="#"
+                        className="d-flex align-items-center"
+                        data-bs-toggle="dropdown"
+                      >
+                        <span className="avatar">{renderProfileAvatar()}</span>
+                      </Link>
+                      <div className="dropdown-menu dropdown-menu-end">
+                        <div className="profile-header d-flex align-items-center">
+                          <div className="avatar">{renderProfileAvatar()}</div>
+                          <div>
+                            <h6>{displayName}</h6>
+                            {displayEmail && <p>{displayEmail}</p>}
+                          </div>
+                        </div>
+                        <div className="profile-footer">
+                          <button
+                            type="button"
+                            className="btn btn-secondary d-inline-flex align-items-center justify-content-center w-100"
+                            onClick={() => setShowLogoutModal(true)}
+                          >
+                            <i className="isax isax-logout me-2" />
+                            Terminar Sessao
+                          </button>
+                        </div>
+                      </div>
+                    </div>
                     <button
                       onClick={() => setShowLogoutModal(true)}
                       className="btn btn-danger d-inline-flex align-items-center"
@@ -1302,7 +1566,7 @@ const Header = () => {
                       Sair
                     </button>
 
-                    {/* Modal de Confirmação */}
+                    {/* Modal de Confirmacao */}
                     <Modal
                       show={showLogoutModal}
                       onHide={() => setShowLogoutModal(false)}

@@ -46,11 +46,12 @@ export const all_routes = {
   instructorWishlist: "/instructor/instructor-withdraw",
   instructorReviews: "/instructor/instructor-withdraw",
   instructorQuizAttempts: "/instructor/instructor-withdraw",
-  instructorOrders: "/instructor/instructor-withdraw",
+  instructorOrders: "/instructor/instructor-orders",
   instructorChat: "/instructor/instructor-withdraw",
   instructorReferral: "/instructor/instructor-withdraw",
   instructorQA: "/instructor/instructor-quiz-questions",
   instructorsettings: "/instructor/instructor-settings",
+  instructorApiTester: "/instructor/instructor-api-tester",
 
   studentDashboard: "/student/student-dashboard",
   studentProfile: "/student/student-profile",

@@ -8,6 +8,7 @@ import { useCourseApi } from "../../../core/api/hooks/useCourseApi";
 import { useCart } from "../../../core/common/context/cartContext";
 import { toast } from "react-toastify";
 import { useAuth } from "../../../core/common/context/AuthContextType";
+import { useEnrollments } from "../../../core/common/context/enrollmentContext";
 
 const CourseList = () => {
   const [selectedItems, setSelectedItems] = useState<Record<number, boolean>>(
@@ -16,6 +17,7 @@ const CourseList = () => {
   const [categories, setCategories] = useState<any[]>([]);
   const { addToCart } = useCart();
   const { isAuthenticated } = useAuth();
+  const { isEnrolled } = useEnrollments();
   const navigate = useNavigate();
 
   const handleItemClick = (id: number) => {
@@ -40,6 +42,10 @@ const CourseList = () => {
 
   const handleAddToCart = (e: React.MouseEvent, course: any) => {
     e.preventDefault();
+    if (isEnrolled(course.id)) {
+      toast.info("Voce ja esta inscrito neste curso.");
+      return;
+    }
     addToCart(course);
     toast.success(`${course.title} adicionado ao carrinho!`, {
       position: "top-right",
@@ -192,6 +198,8 @@ const CourseList = () => {
                       thumbnailUrl: course.thumbnailUrl,
                       thumbnailPath: course.thumbnailPath
                     });
+                    const alreadyEnrolled = isEnrolled(course.id);
+
                     
                     return (
                       <div className="col-12" key={course.id ?? m}>
@@ -263,15 +271,25 @@ const CourseList = () => {
                                     ? `MZN${course.price.toFixed(2)}`
                                     : "Gratuito"}
                                 </h5>
-                                <button
-                                  className="btn btn-primary btn-sm d-inline-flex align-items-center"
-                                  onClick={(
-                                    e: React.MouseEvent<HTMLButtonElement>
-                                  ) => handleAddToCart(e, course)}
-                                >
-                                  <i className="isax isax-shopping-cart5 me-2" />
-                                  Adicionar ao Carrinho
-                                </button>
+                                {alreadyEnrolled ? (
+                                  <Link
+                                    to={`${route.courseWatch}?id=${course.id}`}
+                                    className="btn btn-outline-secondary btn-sm d-inline-flex align-items-center"
+                                  >
+                                    <i className="fa-solid fa-play me-2" />
+                                    Ver Curso
+                                  </Link>
+                                ) : (
+                                  <button
+                                    className="btn btn-primary btn-sm d-inline-flex align-items-center"
+                                    onClick={(
+                                      e: React.MouseEvent<HTMLButtonElement>
+                                    ) => handleAddToCart(e, course)}
+                                  >
+                                    <i className="isax isax-shopping-cart5 me-2" />
+                                    Adicionar ao Carrinho
+                                  </button>
+                                )}
                               </div>
                             </div>
                           </div>

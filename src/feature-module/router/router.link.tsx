@@ -20,10 +20,12 @@ import InstructorAnnouncements from "../Instructor/instructor-announcements/inst
 import InstructorAssignment from "../Instructor/instructor-assignment/instructorAssignment";
 import StudentGrid from "../Instructor/student-grid/studentGrid";
 import StudentList from "../Instructor/student-list/studentList";
+import InstructorApiTester from "../Instructor/instructor-api-tester/instructor-api-tester";
 import InstructorQuiz from "../Instructor/instructor-quiz/instructorQuiz";
 import InstructorQuizResult from "../Instructor/instructor-quiz-result/instructorQuizResult";
 import InstructorEarning from "../Instructor/instructor-earning/instructorEarning";
 import InstructorPayout from "../Instructor/instructor-payout/instructorPayout";
+import InstructorOrders from "../Instructor/instructor-orders/instructorOrders";
 import InstructorStatement from "../Instructor/instructor-statement/instructorStatement";
 import InstructorMessage from "../Instructor/instructor-message/instructorMessage";
 import InstructorTickets from "../Instructor/instructor-tickets/instructorTickets";
@@ -216,6 +218,11 @@ export const publicRoutes = [
     route: Route,
   },
   {
+    path: routes.instructorApiTester,
+    element: <InstructorApiTester />,
+    route: Route,
+  },
+  {
     path: routes.instructorAnnouncements,
     element: <InstructorAnnouncements />,
     route: Route,
@@ -258,6 +265,11 @@ export const publicRoutes = [
   {
     path: routes.instructorPayout,
     element: <InstructorPayout />,
+    route: Route,
+  },
+  {
+    path: routes.instructorOrders,
+    element: <InstructorOrders />,
     route: Route,
   },
   {

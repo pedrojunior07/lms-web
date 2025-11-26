@@ -5,6 +5,7 @@ import { Link } from "react-router-dom";
 import StudentSidebar from "../common/studentSidebar";
 import { all_routes } from "../../router/all_routes";
 import { useCourseApi } from "../../../core/api/hooks/useCourseApi";
+import ProfileCard from "../common/profileCard";
 
 type Course = {
   id: number | string;
@@ -29,9 +30,12 @@ const StudentCourse = () => {
   const route = all_routes;
   const { getCourcesStudents } = useCourseApi();
 
-  const [courses, setCourses] = useState<Course[]>([]);
+  const [allCourses, setAllCourses] = useState<Course[]>([]);
+  const [activeCourses, setActiveCourses] = useState<Course[]>([]);
+  const [completedCourses, setCompletedCourses] = useState<Course[]>([]);
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
+  const [activeTab, setActiveTab] = useState<'all' | 'active' | 'completed'>('all');
 
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
@@ -53,7 +57,20 @@ const StudentCourse = () => {
     try {
       const id = localStorage.getItem("id");
       const data = await getCourcesStudents({ ...filters, page }, id);
-      setCourses(data?.data?.content ?? []);
+      const courses = data?.data?.content ?? [];
+
+      // Separar cursos por status
+      // Assumindo que o curso tem uma propriedade 'progress' ou 'completed'
+      const active = courses.filter((course: any) =>
+        course.progress && course.progress < 100 && course.progress > 0
+      );
+      const completed = courses.filter((course: any) =>
+        course.progress === 100 || course.completed === true
+      );
+
+      setAllCourses(courses);
+      setActiveCourses(active);
+      setCompletedCourses(completed);
       setTotalPages(data?.data?.totalPages ?? 0);
     } catch (err: any) {
       console.error("Erro ao buscar cursos:", err);
@@ -115,60 +132,9 @@ const StudentCourse = () => {
 
       <div className="content">
         <div className="container">
-          {/* Caixa de perfil */}
-          <div className="profile-card overflow-hidden bg-blue-gradient2 mb-5 p-5">
-            <div className="profile-card-bg">
-              <ImageWithBasePath
-                src="assets/img/bg/card-bg-01.png"
-                className="profile-card-bg-1"
-                alt=""
-              />
-            </div>
-            <div className="row align-items-center row-gap-3">
-              <div className="col-lg-6">
-                <div className="d-flex align-items-center">
-                  <span className="avatar avatar-xxl avatar-rounded me-3 border border-white border-2 position-relative">
-                    <ImageWithBasePath
-                      src="assets/img/user/user-02.jpg"
-                      alt="avatar"
-                    />
-                    <span className="verify-tick">
-                      <i className="isax isax-verify5" />
-                    </span>
-                  </span>
-                  <div>
-                    <h5 className="mb-1 text-white d-inline-flex align-items-center">
-                      Ronald Richard
-                      <Link
-                        to={route.studentProfile}
-                        className="link-light fs-16 ms-2"
-                      >
-                        <i className="isax isax-edit-2" />
-                      </Link>
-                    </h5>
-                    <p className="text-light">Estudante</p>
-                  </div>
-                </div>
-              </div>
-              <div className="col-lg-6">
-                <div className="d-flex align-items-center justify-content-lg-end flex-wrap gap-2">
-                  <Link
-                    to={route.courseList}
-                    className="btn btn-white rounded-pill me-3"
-                  >
-                    Explorar Cursos
-                  </Link>
-                  <Link
-                    to={route.studentDashboard}
-                    className="btn btn-secondary rounded-pill"
-                  >
-                    Meu Painel
-                  </Link>
-                </div>
-              </div>
-            </div>
-          </div>
-          {/* Caixa de perfil */}
+          {/* profile box */}
+          <ProfileCard />
+          {/* profile box */}
 
           <div className="row">
             {/* Barra lateral */}
@@ -183,14 +149,15 @@ const StudentCourse = () => {
                     <li className="nav-item mb-0" role="presentation">
                       <Link
                         to="#"
-                        className="active"
+                        className={activeTab === 'all' ? 'active' : ''}
                         data-bs-toggle="tab"
                         data-bs-target="#enroll-courses"
-                        aria-selected="true"
+                        aria-selected={activeTab === 'all'}
                         role="tab"
+                        onClick={() => setActiveTab('all')}
                       >
-                        Inscritos (
-                        {String(courses?.length ?? 0).padStart(2, "0")})
+                        Todos (
+                        {String(allCourses?.length ?? 0).padStart(2, "0")})
                       </Link>
                     </li>
                     <li className="nav-item mb-0" role="presentation">
@@ -198,12 +165,13 @@ const StudentCourse = () => {
                         to="#"
                         data-bs-toggle="tab"
                         data-bs-target="#active-courses"
-                        aria-selected="false"
+                        aria-selected={activeTab === 'active'}
                         role="tab"
-                        className=""
+                        className={activeTab === 'active' ? 'active' : ''}
+                        onClick={() => setActiveTab('active')}
                         tabIndex={-1}
                       >
-                        Ativos (06)
+                        Ativos ({String(activeCourses?.length ?? 0).padStart(2, "0")})
                       </Link>
                     </li>
                     <li className="nav-item mb-0" role="presentation">
@@ -211,12 +179,13 @@ const StudentCourse = () => {
                         to="#"
                         data-bs-toggle="tab"
                         data-bs-target="#complete-courses"
-                        aria-selected="false"
+                        aria-selected={activeTab === 'completed'}
                         role="tab"
-                        className=""
+                        className={activeTab === 'completed' ? 'active' : ''}
+                        onClick={() => setActiveTab('completed')}
                         tabIndex={-1}
                       >
-                        Concluídos (03)
+                        Concluídos ({String(completedCourses?.length ?? 0).padStart(2, "0")})
                       </Link>
                     </li>
                   </ul>
@@ -243,7 +212,7 @@ const StudentCourse = () => {
                     </div>
                   ) : (
                     <div className="row g-4">
-                      {courses.map((course) => {
+                      {allCourses.map((course) => {
                         const ratingInfo = generateRandomRating();
                           
                         return (
@@ -341,8 +310,8 @@ const StudentCourse = () => {
                           </div>
                         );
                       })}
-                      
-                      {courses.length === 0 && !loading && (
+
+                      {allCourses.length === 0 && !loading && (
                         <div className="col-12">
                           <div className="text-center text-muted py-5">
                             <i className="isax isax-book-1 fs-1 mb-3"></i>
@@ -364,75 +333,123 @@ const StudentCourse = () => {
                   id="active-courses"
                   role="tabpanel"
                 >
-                  <div className="row g-4">
-                    {/* Exemplo de curso ativo */}
-                    <div className="col-xl-4 col-md-6">
-                      <div className="course-item-two course-item mx-0 h-100 d-flex flex-column shadow-sm border-0">
-                        <div className="course-img position-relative">
-                          <Link to={route.courseWatch}>
-                            <div className="ratio ratio-16x9">
-                              <ImageWithBasePath
-                                src="assets/img/course/course-01.jpg"
-                                alt="UI/UX Design"
-                                className="w-100 h-100 object-fit-cover"
-                              />
-                            </div>
-                          </Link>
-                          <span className="course-tag active-tag position-absolute top-0 start-0 bg-info text-white px-2 py-1 m-2 rounded">
-                            Em Progresso
-                          </span>
-                        </div>
-                        <div className="course-content d-flex flex-column flex-grow-1 p-3">
-                          <div className="d-flex justify-content-between align-items-center mb-3">
-                            <span className="badge badge-primary rounded-pill bg-primary text-white d-inline-flex align-items-center fs-12 fw-medium">
-                              Design
-                            </span>
-                            <div className="rating">
-                              <i className="fas fa-star filled text-warning me-1" />
-                              <span className="fs-12 text-muted">4.9</span>
-                            </div>
-                          </div>
-                          <h6 className="title mb-3 line-clamp-2">
-                            <Link to={route.courseWatch} className="text-dark text-decoration-none fw-medium">
-                              Informações sobre o curso de UI/UX Design
-                            </Link>
-                          </h6>
-                          <div className="course-meta mb-3">
-                            <div className="d-flex align-items-center text-muted fs-12 gap-3">
-                              <span className="d-flex align-items-center">
-                                <i className="fa-regular fa-clock me-1"></i>
-                                6h 30min
-                              </span>
-                              <span className="d-flex align-items-center">
-                                <i className="fa-solid fa-user-group me-1"></i>
-                                200 alunos
-                              </span>
-                            </div>
-                          </div>
-                          <div className="progress mb-3" style={{height: '6px'}}>
-                            <div 
-                              className="progress-bar bg-success" 
-                              role="progressbar" 
-                              style={{width: '65%'}}
-                              aria-valuenow={65} 
-                              aria-valuemin={0} 
-                              aria-valuemax={100}
-                            />
-                          </div>
-                          <div className="d-flex align-items-center justify-content-between mt-auto pt-3 border-top">
-                            <small className="text-muted fs-12">65% concluído</small>
-                            <Link
-                              to={route.courseWatch}
-                              className="btn btn-primary btn-sm d-inline-flex align-items-center rounded-pill"
-                            >
-                              Continuar
-                              <i className="isax isax-play-circle ms-1" />
-                            </Link>
-                          </div>
-                        </div>
+                  {loading ? (
+                    <div className="text-center py-5">
+                      <div className="spinner-border text-primary" role="status">
+                        <span className="visually-hidden">Carregando...</span>
                       </div>
+                      <div className="mt-2">Carregando cursos...</div>
                     </div>
-                  </div>
+                  ) : (
+                    <div className="row g-4">
+                      {activeCourses.map((course: any) => {
+                        const ratingInfo = generateRandomRating();
+                        const progress = course.progress || 50; // Default 50% se não tiver
+
+                        return (
+                          <div className="col-xl-4 col-md-6" key={course.id}>
+                            <div className="course-item-two course-item mx-0 h-100 d-flex flex-column shadow-sm border-0">
+                              <div className="course-img position-relative">
+                                <Link to={`${route.courseWatch}?id=${course.id}`}>
+                                  <div className="ratio ratio-16x9">
+                                    {course.thumbnailPath ? (
+                                      <img
+                                        src={
+                                          course.thumbnailPath.startsWith('http')
+                                            ? course.thumbnailPath
+                                            : `/assets/img/${course.thumbnailPath}`
+                                        }
+                                        alt={course.title || "Curso"}
+                                        className="w-100 h-100 object-fit-cover"
+                                        onError={handleImageError}
+                                      />
+                                    ) : (
+                                      <div className="w-100 h-100 bg-light d-flex align-items-center justify-content-center">
+                                        <i className="isax isax-book-1 fs-1 text-muted"></i>
+                                      </div>
+                                    )}
+                                  </div>
+                                </Link>
+                                <span className="course-tag active-tag position-absolute top-0 start-0 bg-info text-white px-2 py-1 m-2 rounded">
+                                  Em Progresso
+                                </span>
+                              </div>
+
+                              <div className="course-content d-flex flex-column flex-grow-1 p-3">
+                                <div className="d-flex justify-content-between align-items-center mb-3">
+                                  <span className="badge badge-primary rounded-pill bg-primary text-white d-inline-flex align-items-center fs-12 fw-medium">
+                                    {course?.category?.name || "Geral"}
+                                  </span>
+                                  <div className="rating">
+                                    <i className="fas fa-star filled text-warning me-1" />
+                                    <span className="fs-12 text-muted">
+                                      {ratingInfo.rating}
+                                    </span>
+                                  </div>
+                                </div>
+
+                                <h6 className="title mb-3 line-clamp-2">
+                                  <Link
+                                    to={`${route.courseWatch}?id=${course.id}`}
+                                    className="text-dark text-decoration-none fw-medium"
+                                  >
+                                    {course?.title || "Curso sem título"}
+                                  </Link>
+                                </h6>
+
+                                <div className="course-meta mb-3">
+                                  <div className="d-flex align-items-center text-muted fs-12 gap-3">
+                                    {course.duration && (
+                                      <span className="d-flex align-items-center">
+                                        <i className="fa-regular fa-clock me-1"></i>
+                                        {course.duration}
+                                      </span>
+                                    )}
+                                    <span className="d-flex align-items-center">
+                                      <i className="fa-solid fa-user-group me-1"></i>
+                                      {ratingInfo.reviews} alunos
+                                    </span>
+                                  </div>
+                                </div>
+
+                                <div className="progress mb-3" style={{height: '6px'}}>
+                                  <div
+                                    className="progress-bar bg-success"
+                                    role="progressbar"
+                                    style={{width: `${progress}%`}}
+                                    aria-valuenow={progress}
+                                    aria-valuemin={0}
+                                    aria-valuemax={100}
+                                  />
+                                </div>
+
+                                <div className="d-flex align-items-center justify-content-between mt-auto pt-3 border-top">
+                                  <small className="text-muted fs-12">{progress}% concluído</small>
+                                  <Link
+                                    to={`${route.courseWatch}?id=${course.id}`}
+                                    className="btn btn-primary btn-sm d-inline-flex align-items-center rounded-pill"
+                                  >
+                                    Continuar
+                                    <i className="isax isax-play-circle ms-1" />
+                                  </Link>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+
+                      {activeCourses.length === 0 && !loading && (
+                        <div className="col-12">
+                          <div className="text-center text-muted py-5">
+                            <i className="isax isax-book-1 fs-1 mb-3"></i>
+                            <h5>Nenhum curso ativo</h5>
+                            <p>Você não tem cursos em andamento no momento.</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* Aba Cursos Concluídos */}
@@ -441,73 +458,122 @@ const StudentCourse = () => {
                   id="complete-courses"
                   role="tabpanel"
                 >
-                  <div className="row g-4">
-                    {/* Exemplo de curso concluído */}
-                    <div className="col-xl-4 col-md-6">
-                      <div className="course-item-two course-item mx-0 h-100 d-flex flex-column shadow-sm border-0">
-                        <div className="course-img position-relative">
-                          <Link to={route.courseWatch}>
-                            <div className="ratio ratio-16x9">
-                              <ImageWithBasePath
-                                src="assets/img/course/course-04.jpg"
-                                alt="Desenvolvimento Web"
-                                className="w-100 h-100 object-fit-cover"
-                              />
-                            </div>
-                          </Link>
-                          <span className="course-tag complete-tag position-absolute top-0 start-0 bg-success text-white px-2 py-1 m-2 rounded">
-                            Concluído
-                          </span>
-                        </div>
-                        <div className="course-content d-flex flex-column flex-grow-1 p-3">
-                          <div className="d-flex justify-content-between align-items-center mb-3">
-                            <span className="badge badge-primary rounded-pill bg-primary text-white d-inline-flex align-items-center fs-12 fw-medium">
-                              Programação
-                            </span>
-                            <div className="rating">
-                              <i className="fas fa-star filled text-warning me-1" />
-                              <span className="fs-12 text-muted">4.2</span>
-                            </div>
-                          </div>
-                          <h6 className="title mb-3 line-clamp-2">
-                            <Link to={route.courseWatch} className="text-dark text-decoration-none fw-medium">
-                              Construa sites responsivos do mundo real
-                            </Link>
-                          </h6>
-                          <div className="course-meta mb-3">
-                            <div className="d-flex align-items-center text-muted fs-12 gap-3">
-                              <span className="d-flex align-items-center">
-                                <i className="fa-regular fa-clock me-1"></i>
-                                8h 15min
-                              </span>
-                              <span className="d-flex align-items-center">
-                                <i className="fa-solid fa-user-group me-1"></i>
-                                220 alunos
-                              </span>
-                            </div>
-                          </div>
-                          <div className="d-flex align-items-center justify-content-between mt-auto pt-3 border-top">
-                            <span className="badge bg-success fs-12">
-                              <i className="fas fa-check me-1"></i>
-                              Concluído
-                            </span>
-                            <Link
-                              to={route.courseWatch}
-                              className="btn btn-outline-primary btn-sm d-inline-flex align-items-center rounded-pill"
-                            >
-                              Rever
-                              <i className="isax isax-refresh ms-1" />
-                            </Link>
-                          </div>
-                        </div>
+                  {loading ? (
+                    <div className="text-center py-5">
+                      <div className="spinner-border text-primary" role="status">
+                        <span className="visually-hidden">Carregando...</span>
                       </div>
+                      <div className="mt-2">Carregando cursos...</div>
                     </div>
-                  </div>
+                  ) : (
+                    <div className="row g-4">
+                      {completedCourses.map((course: any) => {
+                        const ratingInfo = generateRandomRating();
+
+                        return (
+                          <div className="col-xl-4 col-md-6" key={course.id}>
+                            <div className="course-item-two course-item mx-0 h-100 d-flex flex-column shadow-sm border-0">
+                              <div className="course-img position-relative">
+                                <Link to={`${route.courseWatch}?id=${course.id}`}>
+                                  <div className="ratio ratio-16x9">
+                                    {course.thumbnailPath ? (
+                                      <img
+                                        src={
+                                          course.thumbnailPath.startsWith('http')
+                                            ? course.thumbnailPath
+                                            : `/assets/img/${course.thumbnailPath}`
+                                        }
+                                        alt={course.title || "Curso"}
+                                        className="w-100 h-100 object-fit-cover"
+                                        onError={handleImageError}
+                                      />
+                                    ) : (
+                                      <div className="w-100 h-100 bg-light d-flex align-items-center justify-content-center">
+                                        <i className="isax isax-book-1 fs-1 text-muted"></i>
+                                      </div>
+                                    )}
+                                  </div>
+                                </Link>
+                                <span className="course-tag complete-tag position-absolute top-0 start-0 bg-success text-white px-2 py-1 m-2 rounded">
+                                  Concluído
+                                </span>
+                              </div>
+
+                              <div className="course-content d-flex flex-column flex-grow-1 p-3">
+                                <div className="d-flex justify-content-between align-items-center mb-3">
+                                  <span className="badge badge-primary rounded-pill bg-primary text-white d-inline-flex align-items-center fs-12 fw-medium">
+                                    {course?.category?.name || "Geral"}
+                                  </span>
+                                  <div className="rating">
+                                    <i className="fas fa-star filled text-warning me-1" />
+                                    <span className="fs-12 text-muted">
+                                      {ratingInfo.rating}
+                                    </span>
+                                  </div>
+                                </div>
+
+                                <h6 className="title mb-3 line-clamp-2">
+                                  <Link
+                                    to={`${route.courseWatch}?id=${course.id}`}
+                                    className="text-dark text-decoration-none fw-medium"
+                                  >
+                                    {course?.title || "Curso sem título"}
+                                  </Link>
+                                </h6>
+
+                                <div className="course-meta mb-3">
+                                  <div className="d-flex align-items-center text-muted fs-12 gap-3">
+                                    {course.duration && (
+                                      <span className="d-flex align-items-center">
+                                        <i className="fa-regular fa-clock me-1"></i>
+                                        {course.duration}
+                                      </span>
+                                    )}
+                                    <span className="d-flex align-items-center">
+                                      <i className="fa-solid fa-user-group me-1"></i>
+                                      {ratingInfo.reviews} alunos
+                                    </span>
+                                  </div>
+                                </div>
+
+                                <div className="d-flex align-items-center justify-content-between mt-auto pt-3 border-top">
+                                  <span className="badge bg-success fs-12">
+                                    <i className="fas fa-check me-1"></i>
+                                    Concluído
+                                  </span>
+                                  <Link
+                                    to={`${route.courseWatch}?id=${course.id}`}
+                                    className="btn btn-outline-primary btn-sm d-inline-flex align-items-center rounded-pill"
+                                  >
+                                    Rever
+                                    <i className="isax isax-refresh ms-1" />
+                                  </Link>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+
+                      {completedCourses.length === 0 && !loading && (
+                        <div className="col-12">
+                          <div className="text-center text-muted py-5">
+                            <i className="isax isax-book-1 fs-1 mb-3"></i>
+                            <h5>Nenhum curso concluído</h5>
+                            <p>Você ainda não concluiu nenhum curso.</p>
+                            <Link to={route.courseList} className="btn btn-primary">
+                              Explorar Cursos
+                            </Link>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
 
               {/* Paginação */}
-              {courses.length > 0 && totalPages > 1 && (
+              {allCourses.length > 0 && totalPages > 1 && (
                 <div className="row align-items-center mt-4">
                   <div className="col-md-4">
                     <p className="pagination-text mb-0 text-muted">

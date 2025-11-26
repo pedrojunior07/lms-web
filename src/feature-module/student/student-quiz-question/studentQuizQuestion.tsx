@@ -445,11 +445,11 @@ const StudentQuizQuestion = () => {
                   </div>
                   <div className="d-flex align-items-center justify-content-center">
                     <Link
-                      to={route.studentDashboard}
+                      to={route.studentProfile}
                       className="btn btn-secondary rounded-pill"
                     >
                       <i className="isax isax-arrow-left-2 me-1 fs-10" />
-                      Voltar ao Dashboard
+                      Voltar ao Perfil
                     </Link>
                   </div>
                 </div>

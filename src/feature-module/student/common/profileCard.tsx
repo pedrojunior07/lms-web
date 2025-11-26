@@ -1,52 +1,90 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { all_routes } from '../../router/all_routes'
 import ImageWithBasePath from '../../../core/common/imageWithBasePath'
+import { useStudent } from '../../../core/api/hooks/useStudents'
+
+const avatarFallbackStyles: React.CSSProperties = {
+  width: '100%',
+  height: '100%',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  backgroundColor: 'rgba(255, 255, 255, 0.2)',
+  color: '#fff',
+  fontWeight: 600,
+  fontSize: '1.25rem',
+  borderRadius: 'inherit',
+  textTransform: 'uppercase',
+};
+
+const getInitials = (name?: string) => {
+  if (!name) return 'ST';
+  const parts = name
+    .split(' ')
+    .map((part) => part.trim())
+    .filter(Boolean);
+  if (!parts.length) {
+    return 'ST';
+  }
+  const [first, second] = parts;
+  return `${first.charAt(0)}${second ? second.charAt(0) : ''}`.toUpperCase();
+};
 
 const ProfileCard = () => {
-  // Recupera os dados do usuário do localStorage
-  const getUserData = () => {
-    const token = localStorage.getItem('token')
-    const id = localStorage.getItem('id')
-    const role = localStorage.getItem('role')
-    const email = localStorage.getItem('email')
-    const user = localStorage.getItem('user')
+  const { getStudentById } = useStudent();
+  const [studentData, setStudentData] = useState<any>(null);
 
-    return {
-      token,
-      id,
-      role,
-      email,
-      user: user ? JSON.parse(user) : null
-    }
-  }
+  const studentId = localStorage.getItem('id');
+  const role = localStorage.getItem('role');
+  const email = localStorage.getItem('email');
 
-  const userData = getUserData()
+  useEffect(() => {
+    const fetchStudentData = async () => {
+      if (!studentId) return;
+
+      try {
+        const response = await getStudentById(Number(studentId));
+        const data = response?.data ?? response;
+        setStudentData(data);
+      } catch (err: any) {
+        console.error("Erro ao carregar dados do estudante:", err);
+      }
+    };
+
+    fetchStudentData();
+  }, [studentId]);
 
   // Formata o role para exibição
   const formatRole = (role: string | null) => {
-    if (!role) return 'Usuário'
-    return role.replace('ROLE_', '').toLowerCase()
-  }
+    if (!role) return 'Usuário';
+    return role.replace('ROLE_', '').charAt(0).toUpperCase() + role.replace('ROLE_', '').slice(1).toLowerCase();
+  };
 
-  // Nome do usuário (você pode ajustar conforme sua estrutura de dados)
+  // Nome do usuário
   const getUserName = () => {
-    if (userData.user && userData.user.name) {
-      return userData.user.name
-    }
-    if (userData.user && userData.user.firstName) {
-      return `${userData.user.firstName} ${userData.user.lastName || ''}`
-    }
-    return userData.email || 'Usuário'
-  }
+    if (!studentData) return email || 'Usuário';
 
-  // Foto do perfil (ajuste conforme sua aplicação)
-  const getProfilePhoto = () => {
-    if (userData.user && userData.user.photo) {
-      return userData.user.photo
+    if (studentData.fullName) return studentData.fullName;
+    if (studentData.name) return studentData.name;
+    if (studentData.firstName) {
+      return `${studentData.firstName} ${studentData.lastName || ''}`.trim();
     }
-    return 'assets/img/user/user-02.jpg' // foto padrão
-  }
+    return studentData.email || email || 'Usuário';
+  };
+
+  // Foto do perfil
+  const getProfilePhoto = () => {
+    if (studentData?.photoUrl) return studentData.photoUrl;
+    if (studentData?.profilePicture) return studentData.profilePicture;
+    if (studentData?.avatarUrl) return studentData.avatarUrl;
+    if (studentData?.photo) return studentData.photo;
+    return null;
+  };
+
+  const profilePhoto = getProfilePhoto();
+  const displayName = getUserName();
+  const initials = getInitials(displayName);
 
   return (
     <div className="profile-card overflow-hidden bg-blue-gradient2 mb-5 p-5">
@@ -61,23 +99,27 @@ const ProfileCard = () => {
         <div className="col-lg-12">
           <div className="d-flex align-items-center">
             <span className="avatar avatar-xxl avatar-rounded me-3 border border-white border-2 position-relative">
-              <ImageWithBasePath src={getProfilePhoto()} alt={getUserName()} />
+              {profilePhoto ? (
+                <ImageWithBasePath src={profilePhoto} alt={displayName} />
+              ) : (
+                <span style={avatarFallbackStyles}>{initials}</span>
+              )}
               <span className="verify-tick">
                 <i className="isax isax-verify5" />
               </span>
             </span>
             <div>
               <h5 className="mb-1 text-white d-inline-flex align-items-center">
-                <Link to={all_routes.studentsDetails}>{getUserName()}</Link>
+                {displayName}
                 <Link
-                  to={all_routes.studentProfile}
+                  to={all_routes.studentSettings}
                   className="link-light fs-16 ms-2"
                 >
                   <i className="isax isax-edit-2" />
                 </Link>
               </h5>
-              <p className="text-light">{formatRole(userData.role)}</p>
-              <p className="text-light small">{userData.email}</p>
+              <p className="text-light">{formatRole(role)}</p>
+              <p className="text-light small">{studentData?.email || email}</p>
             </div>
           </div>
         </div>

@@ -5,7 +5,7 @@ import "./login.css";
 import ImageWithBasePath from "../../../core/common/imageWithBasePath";
 import { useAuth } from "../../../core/common/context/AuthContextType";
 import { all_routes } from "../../router/all_routes";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 
 interface EcoLoginProps {
   onLogin?: (email: string, password: string) => Promise<void>;
@@ -172,7 +172,9 @@ const Login: React.FC<EcoLoginProps> = ({ onLogin }) => {
                 width={350}
               />
             </div>
-            <button className="eco-back-btn">← Voltar ao Início</button>
+            <Link to={route.homefour} className="eco-back-btn">
+              ← Voltar ao Início
+            </Link>
           </div>
 
           {/* Form Title */}
@@ -233,9 +235,9 @@ const Login: React.FC<EcoLoginProps> = ({ onLogin }) => {
                 <input type="checkbox" className="eco-checkbox" />
                 <span className="eco-checkbox-label">Lembrar de mim</span>
               </label>
-              <button type="button" className="eco-forgot-link">
+              <Link to={route.forgotpassword} className="eco-forgot-link">
                 Esqueceu a senha?
-              </button>
+              </Link>
             </div>
 
             {/* Submit Button */}
@@ -267,9 +269,9 @@ const Login: React.FC<EcoLoginProps> = ({ onLogin }) => {
           {/* Sign Up Link */}
           <div className="eco-signup-section">
             <span>Não tem uma conta? </span>
-            <button className="eco-signup-link">
+            <Link to={route.register} className="eco-signup-link">
               Cadastre-se gratuitamente
-            </button>
+            </Link>
           </div>
 
           {/* Sustainability Badge */}

@@ -901,8 +901,8 @@ const UniversalPlayer = ({
 const getCertificateApiBaseUrl = () => {
   const isProduction = process.env.NODE_ENV === 'production';
   return isProduction
-    ? 'https://your-production-domain.com/e-learning/api'
-    : 'http://localhost:8085/e-learning/api';
+    ? 'http://102.211.186.111:8085/e-learning/api'
+    : 'http://102.211.186.111:8085/e-learning/api';
 };
 
 const CourseWatch = () => {
