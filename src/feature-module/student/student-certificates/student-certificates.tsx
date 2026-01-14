@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { API_BASE_URL } from "../../../core/api/axios";
 import { all_routes } from "../../router/all_routes";
 import Breadcrumb from "../../../core/common/Breadcrumb/breadcrumb";
 import ImageWithBasePath from "../../../core/common/imageWithBasePath";
@@ -445,7 +446,7 @@ const StudentCertificates = () => {
         setLoading(true);
         console.log("🔍 Carregando certificados...");
         
-        const response = await fetch('http://102.211.186.111:8085/e-learning/api/certificates/my', {
+        const response = await fetch(`${API_BASE_URL}/certificates/my`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',

@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { useCourseApi } from "../../../core/api/hooks/useCourseApi";
+import { API_BASE_URL } from "../../../core/api/axios";
 import html2canvas from "html2canvas";
 import PdfViewer from "../../../core/common/PdfViewer/PdfViewer";
 
@@ -129,6 +130,18 @@ const getContentType = (url: string | null): ContentType => {
   if (isImage(url)) return "image";
   if (isDocumentUrl(url)) return "document";
   return "unknown";
+};
+
+const getMediaHost = (): string => {
+  const explicitHost = process.env.REACT_APP_MEDIA_HOST;
+  if (explicitHost) return explicitHost;
+  try {
+    const apiUrl = new URL(API_BASE_URL);
+    const hostname = apiUrl.hostname === "127.0.0.1" ? "localhost" : apiUrl.hostname;
+    return `${hostname}:3001`;
+  } catch {
+    return "localhost:3001";
+  }
 };
 
 const buildResourceUrl = (url: string): string => {
@@ -632,6 +645,7 @@ const UniversalPlayer = ({
   };
 
   const detectedType = contentType || (src ? getContentType(src) : 'unknown');
+  const mediaHost = getMediaHost();
 
   if (!src) {
     return (
@@ -669,8 +683,8 @@ const UniversalPlayer = ({
             </video>
           );
         } else {
-          // Se o vídeo vem do servidor 192.250.224.214:3001, não usar iframe (bloqueado por CSP)
-          const isBlockedServer = src.includes('192.250.224.214:3001') || src.includes('localhost:3001');
+          // Se o video vem do servidor de midia, nao usar iframe (bloqueado por CSP)
+          const isBlockedServer = src.includes(mediaHost);
 
           if (iframeBlocked || isBlockedServer) {
             return (
@@ -898,12 +912,7 @@ const UniversalPlayer = ({
   );
 };
 
-const getCertificateApiBaseUrl = () => {
-  const isProduction = process.env.NODE_ENV === 'production';
-  return isProduction
-    ? 'http://102.211.186.111:8085/e-learning/api'
-    : 'http://102.211.186.111:8085/e-learning/api';
-};
+const getCertificateApiBaseUrl = () => API_BASE_URL;
 
 const CourseWatch = () => {
   const navigate = useNavigate();

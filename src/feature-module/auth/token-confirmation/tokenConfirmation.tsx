@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import axios from "axios";
+import { API_BASE_URL } from "../../../core/api/axios";
 
 /**
  * Tela de confirmação de registro.
@@ -29,7 +30,7 @@ const TokenConfirmation: React.FC = () => {
      * em um único ponto da aplicação.
      */
     axios
-      .get("http://102.211.186.111:8085/e-learning/api/auth/registrationConfirm", {
+      .get(`${API_BASE_URL}/auth/registrationConfirm`, {
         params: { token },
       })
       .then((response) => {

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { API_BASE_URL } from "../../../core/api/axios";
 import InstructorSidebar from "../common/instructorSidebar";
 import ProfileCard from "../common/profileCard";
 import DashboardHeader from "../instructor-dashboard/DashboardHeader";
@@ -44,9 +45,17 @@ const InstructorApiTester = () => {
   const [selectedApi, setSelectedApi] = useState<"elearning" | "pay">("pay");
 
   const apiEndpoints = {
-    elearning: "http://102.211.186.111:8085/e-learning/api",
+    elearning: API_BASE_URL,
     pay: "http://localhost:8089",
   };
+
+  const elearningHost = (() => {
+    try {
+      return new URL(API_BASE_URL).host;
+    } catch {
+      return API_BASE_URL;
+    }
+  })();
 
   const apiBaseUrl = apiEndpoints[selectedApi];
 
@@ -363,7 +372,7 @@ const InstructorApiTester = () => {
                     >
                       <strong>E-Learning API (Produção)</strong>
                       <br />
-                      <small>102.211.186.111:8085</small>
+                      <small>{elearningHost}</small>
                     </button>
                   </div>
                   <div className="alert alert-info mt-3 mb-0">

@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "./register.css";
 import axios from "axios";
+import { API_BASE_URL } from "../../../core/api/axios";
 import { toast } from "react-toastify";
 import ImageWithBasePath from "../../../core/common/imageWithBasePath";
 
@@ -192,7 +193,7 @@ const EcoRegister: React.FC<EcoRegisterProps> = ({ onRegister }) => {
     setLoading(true);
     try {
       const response = await axios.post(
-        "http://102.211.186.111:8085/e-learning/api/auth/register",
+        `${API_BASE_URL}/auth/register`,
         {
           role: formData.role,
           firstName: formData.firstName,

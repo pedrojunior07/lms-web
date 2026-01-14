@@ -2,6 +2,7 @@ import axios from "axios";
 import { toast } from "react-toastify";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useState } from "react";
+import { API_BASE_URL } from "../../../core/api/axios";
 
 import Login from "./login";
 import { useAuth } from "../../../core/common/context/AuthContextType";
@@ -21,7 +22,7 @@ const LoginRoute = () => {
     setLoading(true);
     try {
       const response = await axios.post(
-        "http://102.211.186.111:8085/e-learning/api/auth/login",
+        `${API_BASE_URL}/auth/login`,
         { email, password }
       );
 
