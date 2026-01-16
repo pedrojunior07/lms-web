@@ -1,7 +1,7 @@
 import axios from "axios";
 
 // API configurada para produção
-export const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://102.211.186.44:8085/e-learning/api";
+export const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "https://athenarhdlearning.com/e-learning/api";
 
 const api = axios.create({
   baseURL: API_BASE_URL,
