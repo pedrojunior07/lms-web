@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Breadcrumb from "../../../core/common/Breadcrumb/breadcrumb";
 import ProfileCard from "../common/profileCard";
 import InstructorSidebar from "../common/instructorSidebar";
@@ -12,6 +12,8 @@ import { useCourseApi } from "../../../core/api/hooks/useCourseApi";
 
 const InstructorQuiz = () => {
   const { saveQuizz, listQuizzes, getCourseAll } = useCourseApi();
+  const getCourseAllRef = useRef(getCourseAll);
+  const listQuizzesRef = useRef(listQuizzes);
   const [courses, setCourses] = useState<any[]>([]);
   const [quizzes, setQuizzes] = useState<any[]>([]);
 
@@ -26,19 +28,33 @@ const InstructorQuiz = () => {
   };
 
   useEffect(() => {
+    getCourseAllRef.current = getCourseAll;
+  }, [getCourseAll]);
+
+  useEffect(() => {
+    listQuizzesRef.current = listQuizzes;
+  }, [listQuizzes]);
+
+  useEffect(() => {
     const fetchCourses = async () => {
-      const data = await getCourseAll();
-      setCourses(
-        data.data.map((course: any) => ({
-          label: course.title,
-          value: course.id,
-        }))
-      );
+      try {
+        const data = await getCourseAllRef.current();
+        const list = data?.data || data || [];
+        setCourses(
+          (Array.isArray(list) ? list : []).map((course: any) => ({
+            label: course.title,
+            value: course.id,
+          }))
+        );
+      } catch (error) {
+        console.error("Erro ao carregar cursos:", error);
+        setCourses([]);
+      }
     };
 
     const fetchQuizzes = async () => {
       try {
-        const quizzesData = await listQuizzes();
+        const quizzesData = await listQuizzesRef.current();
         setQuizzes(quizzesData || []);
       } catch (error) {
         console.error("Erro ao carregar questionários:", error);
@@ -48,7 +64,7 @@ const InstructorQuiz = () => {
 
     fetchCourses();
     fetchQuizzes();
-  }, [getCourseAll, listQuizzes]);
+  }, []);
 
   const [quizData, setQuizData] = useState({
     courseId: 0,
@@ -541,3 +557,5 @@ const InstructorQuiz = () => {
 };
 
 export default InstructorQuiz;
+
+

@@ -613,11 +613,13 @@ const StyleInjector = () => (
 const UniversalPlayer = ({ 
   src, 
   title,
-  contentType 
+  contentType,
+  onEnded 
 }: { 
   src: string | null; 
   title?: string;
   contentType?: ContentType;
+  onEnded?: () => void;
 }) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [pdfError, setPdfError] = useState(false);
@@ -677,6 +679,7 @@ const UniversalPlayer = ({
               controls 
               className="w-100 h-100" 
               style={{ objectFit: "contain" }}
+              onEnded={onEnded}
             >
               <source src={src} type="video/mp4" />
               Seu navegador não suporta o elemento de vídeo.
@@ -937,6 +940,7 @@ const CourseWatch = () => {
   const [selectedDoc, setSelectedDoc] = useState<string | null>(null);
 
   const [completedLessons, setCompletedLessons] = useState<Set<number>>(new Set());
+  const completedLessonsRef = useRef(completedLessons);
   const [progressPercentage, setProgressPercentage] = useState(0);
   const [lastActivity, setLastActivity] = useState<string>("");
   const [showProgressModal, setShowProgressModal] = useState(false);
@@ -969,6 +973,10 @@ const CourseWatch = () => {
     completeLessonRef.current = completeLesson;
     getDetailedProgressRef.current = getDetailedProgress;
   }, [getCourceById, getCourseCards, getCourseProgress, completeLesson, getDetailedProgress]);
+
+  useEffect(() => {
+    completedLessonsRef.current = completedLessons;
+  }, [completedLessons]);
 
   const loadExistingCertificates = async () => {
     try {
@@ -1306,6 +1314,80 @@ const CourseWatch = () => {
       
       alert(`Erro ao atualizar progresso: ${error?.response?.data?.message || error?.message || 'Tente novamente'}`);
     }
+  };
+
+  const markLessonCompleted = async (lessonId: number) => {
+    if (!courseId) return;
+
+    if (completedLessonsRef.current.has(lessonId)) {
+      return;
+    }
+
+    setCompletedLessons((prev) => {
+      const next = new Set(prev);
+      next.add(lessonId);
+      return next;
+    });
+
+    const newCount = completedLessonsRef.current.size + 1;
+    const newPercentage =
+      totalLessons > 0 ? Math.round((newCount / totalLessons) * 100) : 0;
+    setProgressPercentage(newPercentage);
+
+    try {
+      await completeLessonRef.current(Number(courseId), lessonId);
+      const now = new Date();
+      setLastActivity(
+        `Ãšltima atividade em ${now.toLocaleDateString("pt-BR", {
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+        })}`
+      );
+
+      setTimeout(async () => {
+        try {
+          const updatedProgress = await loadDetailedProgress(
+            Number(courseId),
+            studentId
+          );
+          const updatedModules = updatedProgress as Module[];
+          const realProgress = calculateRealProgress(updatedModules);
+
+          setProgressPercentage(realProgress.progressPercentage);
+
+          const updatedCompletedLessons = new Set<number>();
+          updatedModules.forEach((module) => {
+            module.lessons.forEach((lesson) => {
+              if (lesson.progress && lesson.progress.completed === true) {
+                updatedCompletedLessons.add(lesson.id);
+              }
+            });
+          });
+          setCompletedLessons(updatedCompletedLessons);
+          setModules(updatedModules);
+        } catch (error) {
+          console.error("âŒ Erro ao recarregar progresso:", error);
+        }
+      }, 1000);
+    } catch (error: any) {
+      console.error("âŒ Erro ao atualizar progresso no servidor:", error);
+      setCompletedLessons((prev) => {
+        const next = new Set(prev);
+        next.delete(lessonId);
+        return next;
+      });
+      const revertCount = completedLessonsRef.current.size;
+      const revertPercentage =
+        totalLessons > 0 ? Math.round((revertCount / totalLessons) * 100) : 0;
+      setProgressPercentage(revertPercentage);
+    }
+  };
+
+  const handleVideoEnded = async () => {
+    if (!currentLesson || !courseId) return;
+    if (currentContentType !== "video") return;
+    await markLessonCompleted(currentLesson.id);
   };
 
   const descricaoComprimento = useMemo(() => {
@@ -2002,6 +2084,7 @@ const CourseWatch = () => {
                     src={currentContent} 
                     title={currentLesson?.title}
                     contentType={currentContentType}
+                    onEnded={handleVideoEnded}
                   />
 
                   {currentLesson && (
