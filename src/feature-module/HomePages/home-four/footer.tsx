@@ -64,7 +64,7 @@ const Footer = () => {
                     <h5 className="footer-title">Para Estudantes</h5>
                     <ul>
                       <li>
-                        <Link to="#">Marcaçoes</Link>
+                        <Link to="#">Marcações</Link>
                       </li>
                       <li>
                         <Link to={all_routes.instructorMessage}>Chat</Link>

@@ -15,9 +15,21 @@ interface ImageProps {
 const ImageWithBasePath = (props: ImageProps) => {
   const [error, setError] = useState(false);
 
-  const fullSrc = props.src?.includes("https")
-    ? props.src
-    : `${img_path}${props.src}`;
+  const rawSrc = props.src ?? "";
+  const isAbsolute =
+    /^https?:\/\//i.test(rawSrc) ||
+    rawSrc.startsWith("//") ||
+    rawSrc.startsWith("data:") ||
+    rawSrc.startsWith("blob:");
+  const shouldUpgrade =
+    isAbsolute &&
+    /^http:\/\//i.test(rawSrc) &&
+    typeof window !== "undefined" &&
+    window.location.protocol === "https:";
+  const normalizedSrc = shouldUpgrade
+    ? rawSrc.replace(/^http:\/\//i, "https://")
+    : rawSrc;
+  const fullSrc = isAbsolute ? normalizedSrc : `${img_path}${rawSrc}`;
 
   return (
     <img

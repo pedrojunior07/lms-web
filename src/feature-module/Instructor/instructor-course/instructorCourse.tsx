@@ -54,7 +54,7 @@ const InstructorCourse = () => {
 
   const columns = [
     {
-      title: "Course",
+      title: "Curso",
       dataIndex: "title",
       render: (_: unknown, record: CourseCardDto) => (
         <div className="d-flex align-items-center">
@@ -86,11 +86,11 @@ const InstructorCourse = () => {
             <div className="d-flex align-items-center">
               <span className="d-inline-flex fs-12 align-items-center me-2 pe-2 border-end">
                 <i className="isax isax-video-circle me-1 text-gray-9" />
-                {record.lessonCount} Lessons
+                {record.lessonCount} Aulas
               </span>
               <span className="d-inline-flex fs-12 align-items-center me-2 pe-2 border-end">
                 <i className="isax isax-people me-1 text-gray-9" />
-                {record.studentCount} Students
+                {record.studentCount} Estudantes
               </span>
             </div>
           </div>
@@ -101,19 +101,19 @@ const InstructorCourse = () => {
     },
 
     {
-      title: "Students",
+      title: "Estudantes",
       dataIndex: "studentCount",
       sorter: (a: CourseCardDto, b: CourseCardDto) =>
         a.studentCount - b.studentCount,
     },
     {
-      title: "Price",
+      title: "Preço",
       dataIndex: "price",
       render: (v: number) => `MZN${  v  ? v.toFixed(2) : 0}`,
       sorter: (a: CourseCardDto, b: CourseCardDto) => a.price - b.price,
     },
     {
-      title: "Rating",
+      title: "Avaliação",
       dataIndex: "ratingText",
       render: (v: string) => (
         <span className="d-flex align-items-center">
@@ -146,7 +146,7 @@ const InstructorCourse = () => {
         a.status.localeCompare(b.status),
     },
     {
-      title: "Action",
+      title: "Ações",
       key: "action",
       render: (_: unknown, record: CourseCardDto) => (
         <div className="d-flex align-items-center">

@@ -1130,6 +1130,7 @@
     height: 80%;
     margin-bottom: 0 !important;
     @include respond-below(lg){
+     height: auto;
      margin-bottom: 20px !important;
     }
 }

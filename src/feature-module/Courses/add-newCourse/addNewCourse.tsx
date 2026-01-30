@@ -292,8 +292,8 @@ const AddNewCourse = () => {
   };
 
   const validateStep2 = () => {
-    if (!introductionVideo || !thumbnailFile) {
-      toast.error("Por favor, faça upload da thumbnail e do vídeo de introdução.");
+    if (!thumbnailFile && !thumbnailPath) {
+      toast.error("Por favor, faça upload da thumbnail.");
       return false;
     }
     return true;
@@ -913,7 +913,7 @@ const AddNewCourse = () => {
                               <div className="input-block-link">
                                 <label className="form-label">
                                   Vídeo do Curso
-                                  <span className="text-danger ms-1">*</span>
+                                  <span className="text-muted ms-1">(opcional)</span>
                                 </label>
                               </div>
                             </div>

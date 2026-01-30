@@ -61,7 +61,10 @@ const StudentList = () => {
       title: "Student ID",
       dataIndex: "StudentID",
       render: (text: string) => (
-        <Link to={all_routes.studentsDetails} className="text-primary">
+        <Link
+          to={`${all_routes.studentsDetails}?id=${text}`}
+          className="text-primary"
+        >
           {text}
         </Link>
       ),
@@ -72,12 +75,12 @@ const StudentList = () => {
       render: (text: string, record: any) => (
         <div className="d-flex align-items-center">
           <Link
-            to={all_routes.studentsDetails}
+            to={`${all_routes.studentsDetails}?id=${record.StudentID}`}
             className="avatar avatar-md avatar-rounded me-2"
           >
             <ImageWithBasePath src={`assets/img/user/${record.Img}`} alt="" />
           </Link>
-          <Link to={all_routes.studentsDetails}>
+          <Link to={`${all_routes.studentsDetails}?id=${record.StudentID}`}>
             <p className="fs-14">{text}</p>
           </Link>
         </div>
@@ -109,10 +112,10 @@ const StudentList = () => {
     {
       title: "Action",
       dataIndex: "",
-      render: () => (
+      render: (_: any, record: any) => (
         <div className="d-flex align-items-center">
           <Link
-            to={all_routes.studentsDetails}
+            to={`${all_routes.studentsDetails}?id=${record.StudentID}`}
             className="fs-14 me-1 action-icon"
           >
             <i className="isax isax-eye" />

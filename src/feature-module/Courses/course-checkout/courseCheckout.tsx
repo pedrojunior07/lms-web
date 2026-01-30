@@ -169,7 +169,12 @@ const CourseCheckout: React.FC = () => {
                         <div className="d-flex align-items-start">
                           <div className="flex-shrink-0">
                             <ImageWithBasePath
-                              src={course.image || "assets/img/course/course-01.jpg"}
+                              src={
+                                course.thumbnailPath ||
+                                course.image ||
+                                course.thumbnail ||
+                                "assets/img/course/course-01.jpg"
+                              }
                               alt={course.title}
                               className="rounded"
                               style={{ width: '60px', height: '45px', objectFit: 'cover' }}
